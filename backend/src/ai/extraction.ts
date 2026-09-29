@@ -145,16 +145,11 @@ Reason definitions:
  * Never throws. Any failure resolves to the conservative fallback so a refund
  * request always produces a decision from the deterministic engine.
  */
-export async function extractRefundIntent(
-  message: string,
-): Promise<ExtractionResult> {
+export async function extractRefundIntent(message: string): Promise<ExtractionResult> {
   // A message with no order number cannot be resolved to an order, so there is
   // nothing for the model to do. Skip the call entirely.
   if (!normaliseOrderNumber(message)) {
-    return fallbackExtraction(
-      message,
-      "no order number present in the message",
-    );
+    return fallbackExtraction(message, "no order number present in the message");
   }
 
   let raw: unknown = null;
@@ -191,18 +186,13 @@ export async function extractRefundIntent(
       reason: intent.reason,
       // Dollars in the model contract, integer cents everywhere else.
       requestedAmountCents:
-        intent.requestedAmount === null
-          ? null
-          : Math.round(intent.requestedAmount * 100),
+        intent.requestedAmount === null ? null : Math.round(intent.requestedAmount * 100),
       source: "gemini",
       degradedReason: null,
       raw,
     };
   } catch (err) {
-    log.warn(
-      "extraction call failed; using fallback",
-      err instanceof Error ? err.message : err,
-    );
+    log.warn("extraction call failed; using fallback", err instanceof Error ? err.message : err);
     return fallbackExtraction(message, "extraction call failed", raw);
   }
 }

@@ -31,8 +31,7 @@ export class AppError extends Error {
   }
 }
 
-export const badRequest = (m: string, d?: unknown) =>
-  new AppError(400, "VALIDATION_ERROR", m, d);
+export const badRequest = (m: string, d?: unknown) => new AppError(400, "VALIDATION_ERROR", m, d);
 export const unauthenticated = (m = "Authentication required") =>
   new AppError(401, "UNAUTHENTICATED", m);
 export const forbidden = (m = "You do not have access to this resource") =>

@@ -129,11 +129,7 @@ const escalate = (code: PolicyRuleCode, summary: string): PolicyOutcome => ({
   summary,
 });
 
-const approve = (
-  code: PolicyRuleCode,
-  amountCents: number,
-  summary: string,
-): PolicyOutcome => ({
+const approve = (code: PolicyRuleCode, amountCents: number, summary: string): PolicyOutcome => ({
   decision: "APPROVED",
   rules: [code],
   requiresHumanReview: false,
@@ -170,10 +166,7 @@ const RULES: Rule[] = [
     code: "ORDER_CANCELLED",
     evaluate: (f) =>
       f.order?.status === "CANCELLED"
-        ? deny(
-            "ORDER_CANCELLED",
-            "This order was cancelled, so no refund is required.",
-          )
+        ? deny("ORDER_CANCELLED", "This order was cancelled, so no refund is required.")
         : null,
   },
 
@@ -181,10 +174,7 @@ const RULES: Rule[] = [
     code: "ALREADY_REFUNDED",
     evaluate: (f) =>
       f.order?.refundStatus === "REFUNDED"
-        ? deny(
-            "ALREADY_REFUNDED",
-            "A refund has already been issued for this order.",
-          )
+        ? deny("ALREADY_REFUNDED", "A refund has already been issued for this order.")
         : null,
   },
 
@@ -329,8 +319,7 @@ export function evaluateRefundPolicy(facts: PolicyFacts): PolicyOutcome {
     rules: ["DEFAULT_DENY"],
     requiresHumanReview: false,
     approvedAmountCents: null,
-    summary:
-      "We could not match your request to an eligible refund reason under our policy.",
+    summary: "We could not match your request to an eligible refund reason under our policy.",
   };
 }
 

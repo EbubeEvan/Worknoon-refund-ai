@@ -31,10 +31,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(
-  path: string,
-  init: RequestInit & { json?: unknown } = {},
-): Promise<T> {
+async function request<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
   const headers: Record<string, string> = {
     accept: "application/json",
     ...((init.headers as Record<string, string>) ?? {}),
@@ -82,14 +79,11 @@ function safeJson(text: string): unknown {
 
 export const api = {
   get: <T>(path: string) => request<T>(path, { method: "GET" }),
-  post: <T>(path: string, json?: unknown) =>
-    request<T>(path, { method: "POST", json }),
-  patch: <T>(path: string, json?: unknown) =>
-    request<T>(path, { method: "PATCH", json }),
+  post: <T>(path: string, json?: unknown) => request<T>(path, { method: "POST", json }),
+  patch: <T>(path: string, json?: unknown) => request<T>(path, { method: "PATCH", json }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
   /** Multipart upload, for policy documents. */
-  upload: <T>(path: string, form: FormData) =>
-    request<T>(path, { method: "POST", body: form }),
+  upload: <T>(path: string, form: FormData) => request<T>(path, { method: "POST", body: form }),
 };
 
 /* -------------------------------------------------------------------------- */
@@ -243,9 +237,7 @@ export const endpoints = {
   session: () => api.get<{ user: SessionUser; session: unknown } | null>("/auth/get-session"),
   orders: () => api.get<{ orders: Order[] }>("/orders"),
   profile: () =>
-    api.get<{ customer: Customer; orders: Order[]; refunds: RefundRequest[] }>(
-      "/customers/me",
-    ),
+    api.get<{ customer: Customer; orders: Order[]; refunds: RefundRequest[] }>("/customers/me"),
   submitRefund: (message: string) =>
     api.post<RefundRequestResult>("/refunds/requests", { message }),
   refundRequests: () => api.get<{ requests: RefundRequest[] }>("/refunds/requests"),
@@ -271,9 +263,7 @@ export const endpoints = {
 
   policies: () => api.get<{ policies: Policy[] }>("/policies"),
   policy: (id: string) =>
-    api.get<{ policy: Policy; chunkCount: number; chunks: PolicyChunk[] }>(
-      `/policies/${id}`,
-    ),
+    api.get<{ policy: Policy; chunkCount: number; chunks: PolicyChunk[] }>(`/policies/${id}`),
   uploadPolicy: (form: FormData) =>
     api.upload<{ policy: Policy; chunkCount: number; embedded: boolean }>("/policies", form),
   setPolicyStatus: (id: string, status: "ACTIVE" | "INACTIVE") =>

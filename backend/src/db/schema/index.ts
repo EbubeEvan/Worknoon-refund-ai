@@ -107,11 +107,7 @@ export const orderStatusEnum = pgEnum("order_status", [
   "CANCELLED",
 ]);
 
-export const refundStatusEnum = pgEnum("refund_status", [
-  "NONE",
-  "REQUESTED",
-  "REFUNDED",
-]);
+export const refundStatusEnum = pgEnum("refund_status", ["NONE", "REQUESTED", "REFUNDED"]);
 
 export const refundReasonEnum = pgEnum("refund_reason", [
   "damaged",
@@ -123,18 +119,11 @@ export const refundReasonEnum = pgEnum("refund_reason", [
 /** The only three outcomes the system can produce. */
 export const decisionEnum = pgEnum("decision", ["APPROVED", "DENIED", "ESCALATED"]);
 
-export const refundRequestStatusEnum = pgEnum("refund_request_status", [
-  "SUBMITTED",
-  "DECIDED",
-]);
+export const refundRequestStatusEnum = pgEnum("refund_request_status", ["SUBMITTED", "DECIDED"]);
 
 export const policyStatusEnum = pgEnum("policy_status", ["ACTIVE", "INACTIVE"]);
 
-export const policySourceTypeEnum = pgEnum("policy_source_type", [
-  "pdf",
-  "markdown",
-  "text",
-]);
+export const policySourceTypeEnum = pgEnum("policy_source_type", ["pdf", "markdown", "text"]);
 
 export const actorTypeEnum = pgEnum("actor_type", ["USER", "SYSTEM"]);
 
@@ -314,7 +303,7 @@ export const auditLogs = pgTable(
 /* Relations                                                                   */
 /* -------------------------------------------------------------------------- */
 
-export const usersRelations = relations(users, ({ one, many }) => ({
+export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
   customers: many(customers),

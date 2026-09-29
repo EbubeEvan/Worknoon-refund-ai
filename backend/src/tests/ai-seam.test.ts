@@ -19,9 +19,7 @@ describe("normaliseOrderNumber", () => {
   });
 
   it("finds the order number inside a sentence", () => {
-    expect(
-      normaliseOrderNumber("My kettle from order ORD-1001 arrived cracked"),
-    ).toBe("ORD-1001");
+    expect(normaliseOrderNumber("My kettle from order ORD-1001 arrived cracked")).toBe("ORD-1001");
   });
 
   it("normalises a spaced variant", () => {
@@ -63,9 +61,11 @@ describe("wireToIntent", () => {
    * to the fallback path.
    */
   it("has no nullable fields, so Gemini accepts the response schema", () => {
-    const shape = (refundIntentWireSchema as unknown as {
-      shape: Record<string, { _def?: { typeName?: string } }>;
-    }).shape;
+    const shape = (
+      refundIntentWireSchema as unknown as {
+        shape: Record<string, { _def?: { typeName?: string } }>;
+      }
+    ).shape;
 
     for (const [field, def] of Object.entries(shape)) {
       const typeName = def?._def?.typeName ?? "";
@@ -150,11 +150,13 @@ describe("wireToIntent", () => {
 
 describe("buildRetrievalQuery", () => {
   it("mentions the reason", () => {
-    expect(buildRetrievalQuery({
-      reason: "damaged",
-      orderIsFinalSale: false,
-      orderTotalCents: 100,
-    })).toContain("damaged");
+    expect(
+      buildRetrievalQuery({
+        reason: "damaged",
+        orderIsFinalSale: false,
+        orderTotalCents: 100,
+      }),
+    ).toContain("damaged");
   });
 
   it("distinguishes final sale orders", () => {

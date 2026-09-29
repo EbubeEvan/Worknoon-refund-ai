@@ -1,5 +1,5 @@
 import { createRootRoute, Outlet, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/lib/auth.js";
 import type { SessionUser } from "@/lib/api.js";
 import { Spinner } from "@/components/ui.js";
@@ -56,19 +56,19 @@ export interface AuthGuardState {
 export function useAuthGuard(opts: { requireAdmin?: boolean } = {}): AuthGuardState {
   const { user, isLoading, isAdmin } = useAuth();
   const router = useRouter();
-  const [redirecting, setRedirecting] = useState(false);
 
   const needsRedirect = !isLoading && (!user || (opts.requireAdmin && !isAdmin));
 
   useEffect(() => {
     if (!needsRedirect) return;
-    setRedirecting(true);
     void router.navigate({
       to: !user ? "/login" : "/customer",
     });
   }, [needsRedirect, user, router]);
 
-  const isReady = !isLoading && !needsRedirect && !redirecting && Boolean(user);
+  // While a redirect is pending `needsRedirect` is already true, so this stays
+  // false and the page keeps showing a spinner until the new route renders.
+  const isReady = !isLoading && !needsRedirect && Boolean(user);
 
   return { user, isAdmin, isReady };
 }

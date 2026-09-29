@@ -1,4 +1,4 @@
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { z } from "zod";
 import { badRequest, notFound } from "../../lib/errors.js";
 import { requireCustomer } from "../../middleware/auth.js";
@@ -20,7 +20,7 @@ export function parsePagination(query: unknown): { limit: number; offset: number
 }
 
 /** GET /api/customers/me - the caller's own profile with order and refund history. */
-export async function getMyProfileHandler(req: Request, res: any): Promise<void> {
+export async function getMyProfileHandler(req: Request, res: Response): Promise<void> {
   const customerId = requireCustomer(req);
   const customer = await findCustomerById(customerId);
   if (!customer) throw notFound("Customer profile not found");

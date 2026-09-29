@@ -3,10 +3,7 @@ import { z } from "zod";
 import { badRequest, notFound } from "../../lib/errors.js";
 import { requireCustomer } from "../../middleware/auth.js";
 import { listOrdersForCustomer } from "../orders/repository.js";
-import {
-  listRefundRequestsForCustomer,
-  summariseRefunds,
-} from "./repository.js";
+import { listRefundRequestsForCustomer, summariseRefunds } from "./repository.js";
 import { evaluateRefundRequest } from "./service.js";
 import { recordAuditEvent } from "../audit/repository.js";
 import type { RetrievedContext } from "./types.js";
@@ -36,19 +33,13 @@ const listSchema = z.object({
 function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
   const parsed = schema.safeParse(data);
   if (!parsed.success) {
-    throw badRequest(
-      parsed.error.issues[0]?.message ?? "Invalid request",
-      parsed.error.issues,
-    );
+    throw badRequest(parsed.error.issues[0]?.message ?? "Invalid request", parsed.error.issues);
   }
   return parsed.data;
 }
 
 /** POST /api/refunds/requests - submit a refund request and get a decision. */
-export async function createRefundRequestHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function createRefundRequestHandler(req: Request, res: Response): Promise<void> {
   const principal = req.principal;
   if (!principal) throw badRequest("Unauthenticated");
   const customerId = requireCustomer(req);
@@ -84,24 +75,19 @@ export async function createRefundRequestHandler(
         requestedAmountCents: result.extraction.requestedAmountCents,
         degradedReason: result.extraction.degradedReason,
       },
-      retrievedContext: result.policyContext.chunks.map(
-        (c): RetrievedContext => ({
-          policyId: c.policyId,
-          policyName: c.policyName,
-          chunkIndex: c.chunkIndex,
-          content: c.content,
-        }),
-      ),
+      retrievedContext: result.policyContext.chunks.map((c): RetrievedContext => ({
+        policyId: c.policyId,
+        policyName: c.policyName,
+        chunkIndex: c.chunkIndex,
+        content: c.content,
+      })),
       retrievalDegraded: result.policyContext.degraded,
     },
   });
 }
 
 /** GET /api/refunds/requests - the caller's own request history. */
-export async function listRefundRequestsHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function listRefundRequestsHandler(req: Request, res: Response): Promise<void> {
   const customerId = requireCustomer(req);
   const { limit, offset } = parseOrThrow(listSchema, req.query);
 
@@ -116,10 +102,7 @@ export async function refundStatsHandler(_req: Request, res: Response): Promise<
 }
 
 /** GET /api/refunds/requests/:id - single request, scoped to the owner. */
-export async function getRefundRequestHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function getRefundRequestHandler(req: Request, res: Response): Promise<void> {
   const customerId = requireCustomer(req);
   const { id } = req.params as { id: string };
 

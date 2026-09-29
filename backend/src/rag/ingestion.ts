@@ -53,10 +53,7 @@ export function normalizeText(raw: string): string {
 }
 
 /** Extract plain text from an uploaded file buffer. */
-export async function extractText(
-  buffer: Buffer,
-  sourceType: SourceType,
-): Promise<string> {
+export async function extractText(buffer: Buffer, sourceType: SourceType): Promise<string> {
   if (sourceType === "pdf") {
     // unpdf has no native dependencies and runs cleanly on Node 24.
     const { extractText: extractPdfText, getDocumentProxy } = await import("unpdf");
@@ -75,9 +72,7 @@ export async function chunkPolicyText(text: string): Promise<string[]> {
     chunkOverlap: CHUNKING.chunkOverlap,
   });
   const docs = await splitter.createDocuments([text]);
-  return docs
-    .map((d) => d.pageContent.trim())
-    .filter((c) => c.length > 0);
+  return docs.map((d) => d.pageContent.trim()).filter((c) => c.length > 0);
 }
 
 export interface IndexResult {

@@ -33,7 +33,8 @@ class Session {
 
   private absorb(res: Response) {
     for (const raw of res.headers.getSetCookie()) {
-      const [pair] = raw.split(";");
+      const pair = raw.split(";")[0];
+      if (!pair) continue;
       const idx = pair.indexOf("=");
       if (idx > 0) this.cookies.set(pair.slice(0, idx).trim(), pair.slice(idx + 1));
     }
@@ -80,9 +81,7 @@ class Session {
         await new Promise((r) => setTimeout(r, wait));
         continue;
       }
-      throw new Error(
-        `login failed for ${email}: ${res.status} ${await res.text()}`,
-      );
+      throw new Error(`login failed for ${email}: ${res.status} ${await res.text()}`);
     }
     throw new Error(`login for ${email} did not succeed within the retry budget`);
   }
@@ -103,8 +102,21 @@ function observe(name: string, note: string): void {
   results.push({ name, expect: "info", actual: "info", ok: true, detail: note });
 }
 
-const usd = (c: number | null) =>
-  c === null ? "none" : `$${(c / 100).toFixed(2)}`;
+const usd = (c: number | null) => (c === null ? "none" : `$${(c / 100).toFixed(2)}`);
+
+/**
+ * JSON decoded from a live HTTP response.
+ *
+ * This suite is a black-box client: it asserts on whatever the API actually
+ * returned, which is the whole point of an end-to-end test. Typing the payloads
+ * here would just restate the server's contract inside the test and defeat the
+ * check, so the boundary is deliberately dynamic. Every value is still validated
+ * by the `check`/`observe` assertions rather than trusted.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ApiJson = any;
+
+const asJson = (v: unknown): ApiJson => v as ApiJson;
 
 /* -------------------------------------------------------------------------- */
 
@@ -136,7 +148,7 @@ async function submitRefund(session: Session, message: string) {
     method: "POST",
     body: JSON.stringify({ message }),
   });
-  const body = await res.json();
+  const body = asJson(await res.json());
   return { status: res.status, body };
 }
 
@@ -296,10 +308,7 @@ async function main() {
   {
     // hana tries to claim ada's order.
     const s = await sessionFor("hana@worknoon.test");
-    const { body } = await submitRefund(
-      s,
-      "Order ORD-1001 arrived damaged, I want a refund.",
-    );
+    const { body } = await submitRefund(s, "Order ORD-1001 arrived damaged, I want a refund.");
     check(
       "cross-customer order access is refused",
       "DENIED",
@@ -335,11 +344,7 @@ async function main() {
       replay.body.decision,
       `rules=${JSON.stringify(replay.body.rules)}`,
     );
-    check(
-      "  └ replay rule code",
-      "ALREADY_REFUNDED",
-      replay.body.rules?.[0] ?? "none",
-    );
+    check("  └ replay rule code", "ALREADY_REFUNDED", replay.body.rules?.[0] ?? "none");
   }
 
   {
@@ -371,11 +376,7 @@ async function main() {
       s,
       "The yoga mat in ORD-1017 arrived damaged. Please refund me $19.",
     );
-    check(
-      "approved amount equals order total",
-      "$190.00",
-      usd(body.approvedAmountCents),
-    );
+    check("approved amount equals order total", "$190.00", usd(body.approvedAmountCents));
     check("reply is present", "true", String(Boolean(body.reply?.text)));
     check(
       "retrieval returned policy context",
@@ -398,7 +399,7 @@ async function main() {
     await admin.login("admin@worknoon.test");
 
     const dash = await admin.fetch("/api/admin/dashboard");
-    const dashBody = await dash.json();
+    const dashBody = asJson(await dash.json());
     check("admin dashboard reachable", "200", String(dash.status));
     check(
       "admin sees a refund total",
@@ -408,7 +409,7 @@ async function main() {
     );
 
     const esc = await admin.fetch("/api/admin/escalations");
-    const escBody = await esc.json();
+    const escBody = asJson(await esc.json());
     check(
       "escalation queue is populated",
       "true",
@@ -428,17 +429,14 @@ async function main() {
       if (!target) {
         observe("escalation resolution", "skipped: ORD-1003 not in queue");
       } else {
-        const res = await admin.fetch(
-          `/api/admin/escalations/${target.id}/resolve`,
-          {
-            method: "POST",
-            body: JSON.stringify({
-              resolve: "APPROVE",
-              note: "Verified with the customer; supplier claim filed.",
-            }),
-          },
-        );
-        const body = await res.json();
+        const res = await admin.fetch(`/api/admin/escalations/${target.id}/resolve`, {
+          method: "POST",
+          body: JSON.stringify({
+            resolve: "APPROVE",
+            note: "Verified with the customer; supplier claim filed.",
+          }),
+        });
+        const body = asJson(await res.json());
         check("escalation approve status", "200", String(res.status));
         check("escalation approve ok", "true", String(body.ok));
         check(
@@ -452,22 +450,18 @@ async function main() {
         const owner = new Session();
         await owner.login("grace@worknoon.test");
         const list = await owner.fetch("/api/refunds/requests");
-        const listBody = await list.json();
+        const listBody = asJson(await list.json());
         const resolved = (listBody.requests ?? []).find(
           (r: { orderNumber?: string }) => r.orderNumber === "ORD-1003",
         );
-        check(
-          "resolved escalation is persisted as approved",
-          "APPROVED",
-          resolved?.decision,
-        );
+        check("resolved escalation is persisted as approved", "APPROVED", resolved?.decision);
         check(
           "persisted amount matches the order value",
           "$780.00",
           usd(resolved?.approvedAmountCents),
         );
         const ownerOrders = await owner.fetch("/api/orders");
-        const ownerOrdersBody = await ownerOrders.json();
+        const ownerOrdersBody = asJson(await ownerOrders.json());
         check(
           "order is marked refunded by manual approval",
           "REFUNDED",
@@ -477,20 +471,16 @@ async function main() {
         );
 
         // Resolving twice must not double-approve.
-        const again = await admin.fetch(
-          `/api/admin/escalations/${target.id}/resolve`,
-          { method: "POST", body: JSON.stringify({ resolve: "APPROVE" }) },
-        );
-        check(
-          "a resolved escalation cannot be approved twice",
-          "409",
-          String(again.status),
-        );
+        const again = await admin.fetch(`/api/admin/escalations/${target.id}/resolve`, {
+          method: "POST",
+          body: JSON.stringify({ resolve: "APPROVE" }),
+        });
+        check("a resolved escalation cannot be approved twice", "409", String(again.status));
       }
     }
 
     const audit = await admin.fetch("/api/admin/audit?limit=5");
-    const auditBody = await audit.json();
+    const auditBody = asJson(await audit.json());
     check(
       "audit trail is populated",
       "true",

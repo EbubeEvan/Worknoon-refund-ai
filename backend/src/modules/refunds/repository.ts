@@ -1,15 +1,10 @@
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { db } from "../../db/client.js";
 import { queryRows } from "../../db/execute.js";
 import { orders, refundRequests, type OrderItem } from "../../db/schema/index.js";
 import { conflict, notFound } from "../../lib/errors.js";
 import { newRefundId } from "../../lib/ids.js";
-import type {
-  Decision,
-  PolicyOutcome,
-  PolicyRuleCode,
-  RefundReason,
-} from "../../domain/refund-policy.service.js";
+import type { Decision, PolicyRuleCode, RefundReason } from "../../domain/refund-policy.service.js";
 import type { ExtractedRefundIntent, RetrievedContext } from "./types.js";
 
 /**
@@ -83,8 +78,7 @@ export async function createRefundRequest(
     let decision = input.decision;
     let reasons = input.decisionReasons;
     let status = input.status;
-    let approvedAmountCents =
-      decision === "APPROVED" ? input.approvedAmountCents : null;
+    let approvedAmountCents = decision === "APPROVED" ? input.approvedAmountCents : null;
     if (decision === "APPROVED" && locked.refundStatus === "REFUNDED") {
       decision = "DENIED";
       reasons = ["ALREADY_REFUNDED"];
@@ -126,10 +120,7 @@ export async function createRefundRequest(
     // An auto-approval consumes the order's refund eligibility immediately, so
     // the next request hits ALREADY_REFUNDED instead of being approved again.
     if (decision === "APPROVED") {
-      await tx
-        .update(orders)
-        .set({ refundStatus: "REFUNDED" })
-        .where(eq(orders.id, input.orderId));
+      await tx.update(orders).set({ refundStatus: "REFUNDED" }).where(eq(orders.id, input.orderId));
     }
 
     return { ...(row as RefundRequestRecord), decision, decisionReasons: reasons };
@@ -137,9 +128,7 @@ export async function createRefundRequest(
 }
 
 /** True when this customer already has an unresolved request for the order. */
-export async function hasOpenRequestForOrder(
-  orderId: string,
-): Promise<boolean> {
+export async function hasOpenRequestForOrder(orderId: string): Promise<boolean> {
   const [row] = await db
     .select({ n: count() })
     .from(refundRequests)
@@ -175,8 +164,7 @@ export async function listRefundRequestsForCustomer(
     reason: r.reason as RefundReason,
     requestedAmountCents:
       r.requested_amount_cents === null ? null : Number(r.requested_amount_cents),
-    approvedAmountCents:
-      r.approved_amount_cents === null ? null : Number(r.approved_amount_cents),
+    approvedAmountCents: r.approved_amount_cents === null ? null : Number(r.approved_amount_cents),
     decision: r.decision as Decision,
     decisionReasons: (r.decision_reasons as PolicyRuleCode[]) ?? [],
     status: r.status as "SUBMITTED" | "DECIDED",
@@ -215,8 +203,7 @@ export async function listEscalatedRequests(
     reason: r.reason as RefundReason,
     requestedAmountCents:
       r.requested_amount_cents === null ? null : Number(r.requested_amount_cents),
-    approvedAmountCents:
-      r.approved_amount_cents === null ? null : Number(r.approved_amount_cents),
+    approvedAmountCents: r.approved_amount_cents === null ? null : Number(r.approved_amount_cents),
     decision: r.decision as Decision,
     decisionReasons: (r.decision_reasons as PolicyRuleCode[]) ?? [],
     status: r.status as "SUBMITTED" | "DECIDED",
@@ -268,8 +255,7 @@ export async function resolveEscalation(params: {
       .from(orders)
       .where(eq(orders.id, request.orderId))
       .limit(1);
-    const approved =
-      params.resolve === "APPROVE" ? (orderRow?.totalAmountCents ?? null) : null;
+    const approved = params.resolve === "APPROVE" ? (orderRow?.totalAmountCents ?? null) : null;
 
     await tx
       .update(refundRequests)
@@ -277,10 +263,7 @@ export async function resolveEscalation(params: {
         status: "DECIDED",
         decision: params.resolve === "APPROVE" ? "APPROVED" : "DENIED",
         approvedAmountCents: approved,
-        decisionReasons: [
-          ...(request.decisionReasons ?? []),
-          `ADMIN_${params.resolve}`,
-        ],
+        decisionReasons: [...(request.decisionReasons ?? []), `ADMIN_${params.resolve}`],
         updatedAt: new Date(),
       })
       .where(eq(refundRequests.id, params.requestId));
@@ -349,8 +332,7 @@ export async function listRecentRequests(limit = 20): Promise<RefundRequestWithO
     reason: r.reason as RefundReason,
     requestedAmountCents:
       r.requested_amount_cents === null ? null : Number(r.requested_amount_cents),
-    approvedAmountCents:
-      r.approved_amount_cents === null ? null : Number(r.approved_amount_cents),
+    approvedAmountCents: r.approved_amount_cents === null ? null : Number(r.approved_amount_cents),
     decision: r.decision as Decision,
     decisionReasons: (r.decision_reasons as PolicyRuleCode[]) ?? [],
     status: r.status as "SUBMITTED" | "DECIDED",
@@ -366,4 +348,3 @@ export async function listRecentRequests(limit = 20): Promise<RefundRequestWithO
     updatedAt: new Date(r.updated_at as string),
   }));
 }
-

@@ -1,4 +1,4 @@
-import { and, cosineDistance, desc, eq, inArray } from "drizzle-orm";
+import { and, cosineDistance, eq, inArray } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { policyChunks, policies } from "../db/schema/index.js";
 import { RETRIEVAL } from "../config/ai.js";

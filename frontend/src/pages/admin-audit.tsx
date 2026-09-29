@@ -59,12 +59,9 @@ export function AdminAuditPage() {
     <AppShell nav={nav}>
       <div className="space-y-5">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">
-            Audit trail
-          </h1>
+          <h1 className="text-lg font-semibold tracking-tight text-foreground">Audit trail</h1>
           <p className="mt-0.5 text-xs text-muted">
-            Append-only record of every decision, including whether the AI step
-            ran or fell back.
+            Append-only record of every decision, including whether the AI step ran or fell back.
           </p>
         </div>
 
@@ -93,10 +90,7 @@ export function AdminAuditPage() {
               <Spinner />
             </CardBody>
           ) : (events.data?.events.length ?? 0) === 0 ? (
-            <EmptyState
-              title="No matching events"
-              description="Try clearing the action filter."
-            />
+            <EmptyState title="No matching events" description="Try clearing the action filter." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -120,8 +114,7 @@ export function AdminAuditPage() {
                           tone={
                             e.action.includes("approved")
                               ? "success"
-                              : e.action.includes("denied") ||
-                                  e.action.includes("deleted")
+                              : e.action.includes("denied") || e.action.includes("deleted")
                                 ? "danger"
                                 : e.action.includes("escalated")
                                   ? "warning"
@@ -139,9 +132,7 @@ export function AdminAuditPage() {
                           </span>
                         ) : null}
                       </td>
-                      <td className="whitespace-nowrap px-5 py-2.5 text-muted">
-                        {e.entityType}
-                      </td>
+                      <td className="whitespace-nowrap px-5 py-2.5 text-muted">{e.entityType}</td>
                       <td className="px-5 py-2.5">
                         <MetadataTable metadata={e.metadata} />
                       </td>

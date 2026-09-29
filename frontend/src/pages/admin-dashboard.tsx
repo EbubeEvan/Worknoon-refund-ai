@@ -70,8 +70,8 @@ export function AdminDashboardPage() {
             Refund operations
           </h1>
           <p className="mt-0.5 text-xs text-muted">
-            Every decision below was made by the policy engine. The agent queue
-            handles what the engine deliberately refuses to decide.
+            Every decision below was made by the policy engine. The agent queue handles what the
+            engine deliberately refuses to decide.
           </p>
         </div>
 
@@ -94,26 +94,17 @@ export function AdminDashboardPage() {
                 <Stat label="Requests" value={d.refunds.total} />
                 <Stat
                   label="Approved"
-                  value={
-                    d.refunds.byDecision.find((x) => x.decision === "APPROVED")
-                      ?.count ?? 0
-                  }
+                  value={d.refunds.byDecision.find((x) => x.decision === "APPROVED")?.count ?? 0}
                   tone="success"
                 />
                 <Stat
                   label="Denied"
-                  value={
-                    d.refunds.byDecision.find((x) => x.decision === "DENIED")
-                      ?.count ?? 0
-                  }
+                  value={d.refunds.byDecision.find((x) => x.decision === "DENIED")?.count ?? 0}
                   tone="danger"
                 />
                 <Stat
                   label="Escalated"
-                  value={
-                    d.refunds.byDecision.find((x) => x.decision === "ESCALATED")
-                      ?.count ?? 0
-                  }
+                  value={d.refunds.byDecision.find((x) => x.decision === "ESCALATED")?.count ?? 0}
                   tone="warning"
                 />
                 <Stat
@@ -124,11 +115,13 @@ export function AdminDashboardPage() {
               </div>
 
               {d.refunds.degradedCount > 0 ? (
-                <Alert tone="warning" title={`${d.refunds.degradedCount} request(s) used the extraction fallback`}>
-                  The model call failed or returned unusable output for these
-                  requests. They still received a deterministic decision, but
-                  the reason defaulted to &quot;other&quot;, so they were not
-                  auto-approved.
+                <Alert
+                  tone="warning"
+                  title={`${d.refunds.degradedCount} request(s) used the extraction fallback`}
+                >
+                  The model call failed or returned unusable output for these requests. They still
+                  received a deterministic decision, but the reason defaulted to &quot;other&quot;,
+                  so they were not auto-approved.
                 </Alert>
               ) : null}
 
@@ -152,9 +145,7 @@ export function AdminDashboardPage() {
                               <span className="font-mono text-[11px] text-foreground">
                                 {r.orderNumber}
                               </span>
-                              <Badge tone={decisionTone(r.decision)}>
-                                {r.decision}
-                              </Badge>
+                              <Badge tone={decisionTone(r.decision)}>{r.decision}</Badge>
                               {r.status === "SUBMITTED" ? (
                                 <Badge tone="info">Open</Badge>
                               ) : (
@@ -164,9 +155,7 @@ export function AdminDashboardPage() {
                                 <Badge tone="warning">Injection flagged</Badge>
                               ) : null}
                             </div>
-                            <p className="mt-1 text-xs text-muted">
-                              {r.message}
-                            </p>
+                            <p className="mt-1 text-xs text-muted">{r.message}</p>
                             <p className="mt-1 text-[11px] text-subtle">
                               {r.decisionReasons.map(humanRule).join(" / ")}
                               {r.approvedAmountCents
@@ -182,23 +171,17 @@ export function AdminDashboardPage() {
                         {r.status === "SUBMITTED" ? (
                           <div className="flex flex-wrap items-end gap-2">
                             <div className="min-w-[200px] flex-1">
-                              <Label htmlFor={`note-${r.id}`}>
-                                Agent note (optional)
-                              </Label>
+                              <Label htmlFor={`note-${r.id}`}>Agent note (optional)</Label>
                               <Input
                                 id={`note-${r.id}`}
                                 value={note[r.id] ?? ""}
-                                onChange={(e) =>
-                                  setNote((n) => ({ ...n, [r.id]: e.target.value }))
-                                }
+                                onChange={(e) => setNote((n) => ({ ...n, [r.id]: e.target.value }))}
                                 placeholder="Decision rationale"
                               />
                             </div>
                             <Button
                               size="sm"
-                              onClick={() =>
-                                resolve.mutate({ id: r.id, decision: "APPROVE" })
-                              }
+                              onClick={() => resolve.mutate({ id: r.id, decision: "APPROVE" })}
                               disabled={resolve.isPending}
                             >
                               Approve
@@ -206,9 +189,7 @@ export function AdminDashboardPage() {
                             <Button
                               size="sm"
                               variant="danger"
-                              onClick={() =>
-                                resolve.mutate({ id: r.id, decision: "DENY" })
-                              }
+                              onClick={() => resolve.mutate({ id: r.id, decision: "DENY" })}
                               disabled={resolve.isPending}
                             >
                               Deny
@@ -244,9 +225,7 @@ export function AdminDashboardPage() {
                               {r.orderNumber}
                             </td>
                             <td className="px-5 py-2.5">
-                              <Badge tone={decisionTone(r.decision)}>
-                                {r.decision}
-                              </Badge>
+                              <Badge tone={decisionTone(r.decision)}>{r.decision}</Badge>
                             </td>
                             <td className="px-5 py-2.5 text-muted">
                               {r.decisionReasons.map(humanRule).join(", ")}
@@ -254,9 +233,7 @@ export function AdminDashboardPage() {
                             <td className="px-5 py-2.5 tabular-nums text-muted">
                               {usd(r.requestedAmountCents)}
                             </td>
-                            <td className="px-5 py-2.5 text-muted">
-                              {dateTime(r.createdAt)}
-                            </td>
+                            <td className="px-5 py-2.5 text-muted">{dateTime(r.createdAt)}</td>
                           </tr>
                         ))}
                       </tbody>

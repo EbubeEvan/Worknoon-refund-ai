@@ -1,0 +1,9 @@
+# `set -e` is load-bearing: without it the script's exit code comes from the
+# last command, so an earlier failure would not block the commit.
+set -e
+
+# Lint and format only what is staged, then re-add the fixes.
+#
+# Kept fast on purpose: this runs on every commit, often several times a minute
+# while iterating. Anything slower belongs in pre-push.
+npx lint-staged

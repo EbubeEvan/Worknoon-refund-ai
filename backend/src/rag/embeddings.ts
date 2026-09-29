@@ -43,9 +43,7 @@ export function toVectorLiteral(vector: number[]): string {
 }
 
 /** Log-and-swallow wrapper used by non-critical paths such as the seed. */
-export async function tryEmbedDocuments(
-  texts: string[],
-): Promise<number[][] | null> {
+export async function tryEmbedDocuments(texts: string[]): Promise<number[][] | null> {
   try {
     return await embedDocuments(texts);
   } catch (err) {

@@ -13,9 +13,7 @@ import { db } from "./client.js";
  * Prefer the query builder where it reads well; this is for the conditional
  * aggregates and the multi-table selects that would be unreadable otherwise.
  */
-export async function queryRows<T = Record<string, unknown>>(
-  query: SQLWrapper,
-): Promise<T[]> {
+export async function queryRows<T = Record<string, unknown>>(query: SQLWrapper): Promise<T[]> {
   const result = await db.execute(query);
   return (result as unknown as { rows: T[] }).rows;
 }

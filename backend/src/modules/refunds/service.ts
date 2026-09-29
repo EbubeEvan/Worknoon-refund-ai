@@ -9,10 +9,7 @@ import { buildRetrievalQuery, retrievePolicyContext } from "../../rag/retrieval.
 import { createLogger } from "../../lib/logger.js";
 import { recordAuditEvent } from "../audit/repository.js";
 import { findOrderForCustomer, type OrderRecord } from "../orders/repository.js";
-import {
-  createRefundRequest,
-  hasOpenRequestForOrder,
-} from "./repository.js";
+import { createRefundRequest, hasOpenRequestForOrder } from "./repository.js";
 import type { ExtractedRefundIntent, RefundEvaluation, RetrievedContext } from "./types.js";
 
 const log = createLogger("refund-service");
@@ -78,9 +75,7 @@ function toRetrievedContext(
  * decision. The only errors that propagate are genuine infrastructure faults
  * (the database is down), which the error middleware turns into a 500.
  */
-export async function evaluateRefundRequest(
-  input: EvaluateRefundInput,
-): Promise<RefundEvaluation> {
+export async function evaluateRefundRequest(input: EvaluateRefundInput): Promise<RefundEvaluation> {
   const { customerId, message, userId } = input;
 
   // (1) Deterministic scan of the raw message, before any model call.

@@ -45,9 +45,7 @@ export function LoginPage() {
       void router.navigate({ to: "/" });
     } catch (err) {
       setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not sign in. Check the API is running.",
+        err instanceof ApiError ? err.message : "Could not sign in. Check the API is running.",
       );
     } finally {
       setSubmitting(false);
@@ -61,12 +59,8 @@ export function LoginPage() {
           <div className="mx-auto grid size-10 place-items-center rounded-xl bg-primary text-sm font-bold text-white">
             W
           </div>
-          <h1 className="mt-3 text-lg font-semibold tracking-tight text-foreground">
-            Refund Desk
-          </h1>
-          <p className="mt-1 text-xs text-muted">
-            Sign in to submit or review a refund request.
-          </p>
+          <h1 className="mt-3 text-lg font-semibold tracking-tight text-foreground">Refund Desk</h1>
+          <p className="mt-1 text-xs text-muted">Sign in to submit or review a refund request.</p>
         </div>
 
         <Card>
@@ -109,12 +103,9 @@ export function LoginPage() {
 
         <Card>
           <CardBody className="space-y-2">
-            <p className="text-xs font-semibold text-foreground">
-              Demo accounts
-            </p>
+            <p className="text-xs font-semibold text-foreground">Demo accounts</p>
             <p className="text-[11px] text-muted">
-              Password for all seeded accounts:{" "}
-              <code className="font-mono">{DEMO_PASSWORD}</code>
+              Password for all seeded accounts: <code className="font-mono">{DEMO_PASSWORD}</code>
             </p>
             <ul className="space-y-1 pt-1">
               {DEMO_ACCOUNTS.map((a) => (

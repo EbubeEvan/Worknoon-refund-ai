@@ -41,19 +41,11 @@ export function AppShell({
             {user ? (
               <>
                 <div className="hidden text-right sm:block">
-                  <p className="text-xs font-medium text-foreground">
-                    {user.name}
-                  </p>
+                  <p className="text-xs font-medium text-foreground">{user.name}</p>
                   <p className="text-[11px] text-subtle">{user.email}</p>
                 </div>
-                <Badge tone={isAdmin ? "info" : "neutral"}>
-                  {isAdmin ? "Admin" : "Customer"}
-                </Badge>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void handleSignOut()}
-                >
+                <Badge tone={isAdmin ? "info" : "neutral"}>{isAdmin ? "Admin" : "Customer"}</Badge>
+                <Button variant="secondary" size="sm" onClick={() => void handleSignOut()}>
                   Sign out
                 </Button>
               </>
@@ -65,8 +57,8 @@ export function AppShell({
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
 
       <footer className="mx-auto max-w-6xl px-4 pb-8 pt-2 text-[11px] text-subtle">
-        Refund decisions are made by deterministic policy rules. The AI parses
-        the request and explains the outcome; it never approves a refund.
+        Refund decisions are made by deterministic policy rules. The AI parses the request and
+        explains the outcome; it never approves a refund.
       </footer>
     </div>
   );

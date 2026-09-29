@@ -1,0 +1,17 @@
+# `set -e` is load-bearing. Without it every command below runs even after an
+# earlier one fails, and the hook exits with the status of the last command -
+# which would silently let a lint or test failure through.
+set -e
+
+# The gate for anything leaving this machine.
+#
+# Unit tests are included because they run in under a second and they are the
+# cheapest possible signal that the policy engine still decides correctly. The
+# e2e suite is deliberately excluded: it needs the Docker stack up, takes
+# minutes, and spends a rate-limited Gemini quota. Run it with `npm run e2e`,
+# and wire it to CI rather than a local hook.
+npm run lint
+npm run format:check
+npm run typecheck
+npm test
+npm run build

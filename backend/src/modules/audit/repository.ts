@@ -76,21 +76,20 @@ export async function listAuditEvents(params: {
 
   const where = filters.length ? and(...filters) : undefined;
 
-  const rows: AuditRow[] = (await db
-    .select()
-    .from(auditLogs)
-    .where(where)
-    .orderBy(desc(auditLogs.createdAt))
-    .limit(limit)
-    .offset(offset)).map((r) => ({
+  const rows: AuditRow[] = (
+    await db
+      .select()
+      .from(auditLogs)
+      .where(where)
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(limit)
+      .offset(offset)
+  ).map((r) => ({
     ...r,
     metadata: r.metadata ?? {},
   }));
 
-  const [totalRow] = await db
-    .select({ n: count() })
-    .from(auditLogs)
-    .where(where);
+  const [totalRow] = await db.select({ n: count() }).from(auditLogs).where(where);
 
   return { rows, total: totalRow?.n ?? 0 };
 }

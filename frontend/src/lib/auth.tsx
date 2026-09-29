@@ -36,13 +36,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
 
+  /**
+   * Probe the session.
+   *
+   * Total by design: it never rejects. Callers get "signed in as X" or "signed
+   * out" and nothing else, so a dead API or a 500 renders as signed-out rather
+   * than crashing a route. This also keeps every setState inside an async
+   * continuation instead of synchronously in an effect body.
+   */
   const refresh = useCallback(async () => {
     try {
       const data = await api.get<{ user: SessionUser } | null>("/auth/get-session");
       setUser(data?.user ?? null);
     } catch (err) {
-      // A 401 here just means "not signed in", which is a normal state.
-      if (!(err instanceof ApiError && err.isAuth)) throw err;
+      // A 401 just means "not signed in", a normal state. Anything else means we
+      // could not ask, which is also not a signed-in user.
+      if (!(err instanceof ApiError && err.isAuth)) {
+        console.warn("session probe failed; treating as signed out", err);
+      }
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -52,9 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Resolve the session once on mount. Without this the app sits on the
     // loading spinner forever, because nothing else calls refresh().
-    // An unexpected error is swallowed here: refresh() rethrows non-401s, and
-    // "could not reach the API" should render as signed-out, not as a blank page.
-    void refresh().catch(() => setUser(null));
+    void refresh();
   }, [refresh]);
 
   const signIn = useCallback(

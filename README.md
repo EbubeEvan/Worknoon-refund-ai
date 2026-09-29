@@ -62,12 +62,12 @@ Migrations and the demo seed run automatically on API start.
 All seeded accounts use the password `password123`. The login page can fill these
 in for you.
 
-| Account                   | Role    | Scenario it demonstrates          |
-| ------------------------- | ------- | --------------------------------- |
-| `ada@worknoon.test`       | CUSTOMER| damaged item, approved outright   |
-| `grace@worknoon.test`     | CUSTOMER| request above the $500 auto limit |
-| `marcus@worknoon.test`    | CUSTOMER| final sale, denied                |
-| `admin@worknoon.test`     | ADMIN   | escalation queue, policies, audit |
+| Account                | Role     | Scenario it demonstrates          |
+| ---------------------- | -------- | --------------------------------- |
+| `ada@worknoon.test`    | CUSTOMER | damaged item, approved outright   |
+| `grace@worknoon.test`  | CUSTOMER | request above the $500 auto limit |
+| `marcus@worknoon.test` | CUSTOMER | final sale, denied                |
+| `admin@worknoon.test`  | ADMIN    | escalation queue, policies, audit |
 
 The seed creates 15 customers and 17 orders, each shaped to trigger a different
 policy outcome.
@@ -78,15 +78,54 @@ policy outcome.
 npm run up            # build and start db + api + web
 npm run down          # stop
 npm run logs          # tail the API
-npm run typecheck     # backend + frontend
+npm run lint          # eslint, correctness only
+npm run lint:fix      # eslint --fix
+npm run format        # prettier --write
+npm run format:check  # prettier --check
+npm run typecheck     # tsc: backend/src, backend/scripts, frontend
 npm test              # 58 unit tests (policy engine + AI seam)
 npm run e2e           # 49-check live end-to-end suite
 npm run reset:demo    # wipe orders/requests/policies and re-seed
 npm run build         # compile both packages
+npm run verify        # lint + format:check + typecheck + test + build
 ```
+
+**Run `npm run lint` and `npm run build` after every change**, not once at the
+end. Both must exit 0. `npm run verify` bundles the full gate and runs in well
+under a minute; it deliberately leaves out the e2e suite.
 
 `npm run e2e` needs a freshly seeded database. Run `npm run reset:demo` first, or
 scenarios will collide on orders an earlier run already consumed.
+
+### Tooling
+
+ESLint owns correctness, Prettier owns formatting. `eslint.config.mjs` ends with
+`eslint-config-prettier`, which switches off every stylistic rule that would
+contradict the formatter — so add new rules _above_ that line, never below it.
+
+`backend/seed/` is in `.prettierignore` on purpose: the policy markdown is chunked
+and embedded into the vector store, so reformatting it would silently change what
+the RAG pipeline ingests.
+
+### Git hooks
+
+Installed by husky via `npm run prepare`; they need no manual `git config`.
+
+| Hook         | Runs                                                                   |
+| ------------ | ---------------------------------------------------------------------- |
+| `pre-commit` | `lint-staged` — eslint `--fix` + prettier `--write`, staged files only |
+| `pre-push`   | lint, format:check, typecheck, unit tests, build                       |
+| `commit-msg` | commitlint, Conventional Commits                                       |
+
+Unit tests are in `pre-push` because they run in under a second and are the
+cheapest signal that the policy engine still decides correctly. The e2e suite is
+not in any hook: it needs the Docker stack up, takes minutes, and spends a
+rate-limited Gemini quota. That belongs in CI, not a local hook.
+
+Both hooks start with `set -e`, which is load-bearing — without it a failure
+early in the script is swallowed and the hook exits with the last command's
+status. Bypass deliberately with `git commit --no-verify` or
+`git push --no-verify`, not reflexively.
 
 ## Layout
 
@@ -113,15 +152,15 @@ engine can be unit tested in isolation.
 
 Money is stored as integer cents everywhere. No floats touch an amount.
 
-| Table          | Notes                                                        |
-| -------------- | ------------------------------------------------------------ |
-| `users`        | Better Auth; carries the `CUSTOMER`/`ADMIN` role            |
-| `customers`    | one per user                                                 |
-| `orders`       | `refund_status` and `status` gate what the engine will allow |
+| Table             | Notes                                                             |
+| ----------------- | ----------------------------------------------------------------- |
+| `users`           | Better Auth; carries the `CUSTOMER`/`ADMIN` role                  |
+| `customers`       | one per user                                                      |
+| `orders`          | `refund_status` and `status` gate what the engine will allow      |
 | `refund_requests` | `requested_amount_cents` and `approved_amount_cents` are separate |
-| `policies`     | uploaded or seeded documents, one active at a time           |
-| `policy_chunks`| embedded text for retrieval                                  |
-| `audit_logs`   | append-only; no update or delete path exists                 |
+| `policies`        | uploaded or seeded documents, one active at a time                |
+| `policy_chunks`   | embedded text for retrieval                                       |
+| `audit_logs`      | append-only; no update or delete path exists                      |
 
 `approved_amount_cents` is deliberately distinct from what the customer asked
 for, because they often differ — a damaged-item refund settles at the full value

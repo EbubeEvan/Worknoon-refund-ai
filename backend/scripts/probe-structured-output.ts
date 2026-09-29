@@ -32,8 +32,7 @@ async function probe(label: string, schema: z.ZodType, message: string) {
   }
 }
 
-const message =
-  "My kettle from order ORD-1001 arrived cracked. I'd like a refund of $120 please.";
+const message = "My kettle from order ORD-1001 arrived cracked. I'd like a refund of $120 please.";
 
 await probe("nullable fields", nullable, message);
 await probe("sentinel fields", sentinel, message);

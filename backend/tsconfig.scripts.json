@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // This config exists only to typecheck, so it must not emit. `rootDir` is
+    // overridden because the inherited one is `./src`, which rejects anything
+    // under `scripts/`.
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["scripts/**/*.ts"]
+}

@@ -57,10 +57,7 @@ export interface OrderWithCustomer extends OrderRecord {
 }
 
 /** Admin view: any order, with its owner attached. */
-export async function listOrdersWithCustomer(
-  limit = 50,
-  offset = 0,
-): Promise<OrderWithCustomer[]> {
+export async function listOrdersWithCustomer(limit = 50, offset = 0): Promise<OrderWithCustomer[]> {
   const rows = await queryRows(sql`
     select o.*, c.full_name as customer_name, c.email as customer_email
     from orders o
@@ -85,8 +82,5 @@ export async function listOrdersWithCustomer(
 }
 
 export async function markOrderRefunded(orderId: string): Promise<void> {
-  await db
-    .update(orders)
-    .set({ refundStatus: "REFUNDED" })
-    .where(eq(orders.id, orderId));
+  await db.update(orders).set({ refundStatus: "REFUNDED" }).where(eq(orders.id, orderId));
 }

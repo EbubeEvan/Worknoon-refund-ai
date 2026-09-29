@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { and, count, eq, sql } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { db, pool } from "./client.js";
 import { customers, orders, policies, users, type OrderItem } from "./schema/index.js";
 import { newCustomerId, newOrderId, newPolicyId } from "../lib/ids.js";
@@ -317,7 +317,9 @@ async function ensureAuthUser(input: {
       .where(eq(users.email, input.email))
       .limit(1);
     if (!existing) {
-      throw new Error(`could not create or find user ${input.email}: ${message}`);
+      throw new Error(`could not create or find user ${input.email}: ${message}`, {
+        cause: err,
+      });
     }
     return existing.id;
   }
@@ -442,4 +444,3 @@ if (isEntrypoint) {
       process.exit(1);
     });
 }
-

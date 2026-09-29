@@ -54,9 +54,7 @@ export function CustomerPage() {
     },
     onError: (err) => {
       setResult(null);
-      setError(
-        err instanceof ApiError ? err.message : "Could not submit the request",
-      );
+      setError(err instanceof ApiError ? err.message : "Could not submit the request");
     },
   });
 
@@ -79,12 +77,10 @@ export function CustomerPage() {
     <AppShell nav={nav}>
       <div className="space-y-5">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">
-            My refunds
-          </h1>
+          <h1 className="text-lg font-semibold tracking-tight text-foreground">My refunds</h1>
           <p className="mt-0.5 text-xs text-muted">
-            Describe the problem in your own words. Your order number and the
-            reason are read automatically.
+            Describe the problem in your own words. Your order number and the reason are read
+            automatically.
           </p>
         </div>
 
@@ -106,9 +102,7 @@ export function CustomerPage() {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="My kettle from order ORD-1001 arrived cracked and won't hold water. I'd like a refund."
                 />
-                <p className="mt-1 text-[11px] text-subtle">
-                  {message.length}/4000 characters
-                </p>
+                <p className="mt-1 text-[11px] text-subtle">{message.length}/4000 characters</p>
               </div>
 
               {error ? <Alert tone="danger">{error}</Alert> : null}
@@ -133,25 +127,30 @@ export function CustomerPage() {
 
           {/* Decision result */}
           <div className="space-y-3 lg:col-span-2">
-            {result ? <DecisionResult result={result} showExplain={showExplain} setShowExplain={setShowExplain} /> : null}
+            {result ? (
+              <DecisionResult
+                result={result}
+                showExplain={showExplain}
+                setShowExplain={setShowExplain}
+              />
+            ) : null}
 
             {!result ? (
               <Card>
                 <CardHeader title="How decisions are made" />
                 <CardBody className="space-y-2 text-[11px] text-muted">
                   <p>
-                    The assistant reads your message and pulls out the order
-                    number, reason, and any amount you asked for.
+                    The assistant reads your message and pulls out the order number, reason, and any
+                    amount you asked for.
                   </p>
                   <p>
-                    A deterministic rule set then applies your order's real
-                    data - purchase date, final-sale status, amount, refund
-                    history - and makes the decision. The assistant only writes
-                    the explanation afterwards.
+                    A deterministic rule set then applies your order's real data - purchase date,
+                    final-sale status, amount, refund history - and makes the decision. The
+                    assistant only writes the explanation afterwards.
                   </p>
                   <p>
-                    Requests over $500, suspicious messages, and anything
-                    ambiguous go to a human agent.
+                    Requests over $500, suspicious messages, and anything ambiguous go to a human
+                    agent.
                   </p>
                 </CardBody>
               </Card>
@@ -170,10 +169,7 @@ export function CustomerPage() {
               <Spinner />
             </CardBody>
           ) : (orders.data?.orders.length ?? 0) === 0 ? (
-            <EmptyState
-              title="No orders yet"
-              description="This account has no orders on file."
-            />
+            <EmptyState title="No orders yet" description="This account has no orders on file." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -201,12 +197,8 @@ export function CustomerPage() {
                       <td className="px-5 py-2.5 text-muted">
                         {o.items.map((i) => `${i.name} x${i.quantity}`).join(", ")}
                       </td>
-                      <td className="px-5 py-2.5 text-muted">
-                        {shortDate(o.purchasedAt)}
-                      </td>
-                      <td className="px-5 py-2.5 tabular-nums">
-                        {usd(o.totalAmountCents)}
-                      </td>
+                      <td className="px-5 py-2.5 text-muted">{shortDate(o.purchasedAt)}</td>
+                      <td className="px-5 py-2.5 tabular-nums">{usd(o.totalAmountCents)}</td>
                       <td className="px-5 py-2.5">
                         <Badge
                           tone={
@@ -224,11 +216,7 @@ export function CustomerPage() {
                         {o.refundStatus === "NONE" ? (
                           <span className="text-subtle">-</span>
                         ) : (
-                          <Badge
-                            tone={
-                              o.refundStatus === "REFUNDED" ? "success" : "info"
-                            }
-                          >
+                          <Badge tone={o.refundStatus === "REFUNDED" ? "success" : "info"}>
                             {o.refundStatus}
                           </Badge>
                         )}
@@ -263,29 +251,19 @@ export function CustomerPage() {
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-[11px] text-fg">
-                          {r.orderNumber}
-                        </span>
-                        <Badge tone={decisionTone(r.decision)}>
-                          {r.decision}
-                        </Badge>
+                        <span className="font-mono text-[11px] text-fg">{r.orderNumber}</span>
+                        <Badge tone={decisionTone(r.decision)}>{r.decision}</Badge>
                         {r.status === "SUBMITTED" ? (
                           <Badge tone="info">Awaiting agent</Badge>
                         ) : null}
-                        {r.injectionDetected ? (
-                          <Badge tone="warning">Flagged</Badge>
-                        ) : null}
+                        {r.injectionDetected ? <Badge tone="warning">Flagged</Badge> : null}
                       </div>
-                      <p className="mt-1 truncate text-xs text-muted">
-                        {r.message}
-                      </p>
+                      <p className="mt-1 truncate text-xs text-muted">{r.message}</p>
                     </div>
                     <div className="text-right text-[11px] text-subtle">
                       <p>{shortDate(r.createdAt)}</p>
                       {r.approvedAmountCents ? (
-                        <p className="font-medium text-approved">
-                          {usd(r.approvedAmountCents)}
-                        </p>
+                        <p className="font-medium text-approved">{usd(r.approvedAmountCents)}</p>
                       ) : null}
                     </div>
                   </div>
@@ -337,18 +315,14 @@ function DecisionResult({
         <CardBody className="space-y-3">
           <div>
             <div className="flex items-center gap-2">
-              <Badge tone={decisionTone(result.decision)}>
-                {result.decision}
-              </Badge>
+              <Badge tone={decisionTone(result.decision)}>{result.decision}</Badge>
               {result.approvedAmountCents ? (
                 <span className="text-sm font-semibold tabular-nums text-approved">
                   {usd(result.approvedAmountCents)}
                 </span>
               ) : null}
             </div>
-            <h3 className="mt-2 text-sm font-semibold text-foreground">
-              {heading}
-            </h3>
+            <h3 className="mt-2 text-sm font-semibold text-foreground">{heading}</h3>
           </div>
 
           {/* The customer-facing reply from the assistant. */}
@@ -363,9 +337,7 @@ function DecisionResult({
                 </Badge>
               ) : null}
             </div>
-            <p className="text-xs leading-relaxed text-foreground">
-              {result.reply.text}
-            </p>
+            <p className="text-xs leading-relaxed text-foreground">{result.reply.text}</p>
           </div>
 
           <div className="flex flex-wrap gap-1">
@@ -412,10 +384,7 @@ function ExplainPanel({ result }: { result: RefundRequestResult }) {
             <Row label="Source" value={e.extraction.source} />
             <Row label="Order found" value={e.extraction.orderNumber ?? "none"} />
             <Row label="Reason" value={e.extraction.reason} />
-            <Row
-              label="Amount asked for"
-              value={usd(e.extraction.requestedAmountCents)}
-            />
+            <Row label="Amount asked for" value={usd(e.extraction.requestedAmountCents)} />
             {e.extraction.degradedReason ? (
               <Row label="Degraded because" value={e.extraction.degradedReason} />
             ) : null}
@@ -428,8 +397,7 @@ function ExplainPanel({ result }: { result: RefundRequestResult }) {
           </p>
           {e.retrievalDegraded ? (
             <Alert tone="warning">
-              Retrieval was unavailable, so the reply was written without
-              policy context.
+              Retrieval was unavailable, so the reply was written without policy context.
             </Alert>
           ) : e.retrievedContext.length === 0 ? (
             <p className="mt-2 text-[11px] text-muted">
@@ -455,9 +423,9 @@ function ExplainPanel({ result }: { result: RefundRequestResult }) {
         </div>
 
         <p className="text-[10px] leading-relaxed text-subtle">
-          Neither of the two panels above can change the outcome. The rules
-          engine ran on the order's stored data before the assistant was asked
-          to write anything, and its rule codes are shown above.
+          Neither of the two panels above can change the outcome. The rules engine ran on the
+          order's stored data before the assistant was asked to write anything, and its rule codes
+          are shown above.
         </p>
       </CardBody>
     </Card>

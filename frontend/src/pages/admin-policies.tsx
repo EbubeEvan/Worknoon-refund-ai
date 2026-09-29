@@ -76,9 +76,7 @@ export function AdminPoliciesPage() {
     },
     onError: (err) => {
       setMessage(null);
-      setError(
-        err instanceof ApiError ? err.message : "Upload failed",
-      );
+      setError(err instanceof ApiError ? err.message : "Upload failed");
     },
   });
 
@@ -120,8 +118,8 @@ export function AdminPoliciesPage() {
             Refund policy knowledge base
           </h1>
           <p className="mt-0.5 text-xs text-muted">
-            Upload a PDF, Markdown, or text policy. It is split into chunks and
-            embedded with Gemini; retrieval searches the active policy only.
+            Upload a PDF, Markdown, or text policy. It is split into chunks and embedded with
+            Gemini; retrieval searches the active policy only.
           </p>
         </div>
 
@@ -180,10 +178,7 @@ export function AdminPoliciesPage() {
             {message ? <Alert tone="success">{message}</Alert> : null}
             {error ? <Alert tone="danger">{error}</Alert> : null}
 
-            <Button
-              onClick={() => upload.mutate()}
-              disabled={upload.isPending}
-            >
+            <Button onClick={() => upload.mutate()} disabled={upload.isPending}>
               {upload.isPending ? <Spinner className="size-3.5" /> : null}
               {upload.isPending ? "Indexing..." : "Upload and index"}
             </Button>
@@ -228,11 +223,7 @@ export function AdminPoliciesPage() {
                   title="Indexed chunks"
                   description="These are the exact segments retrieval searches."
                   action={
-                    detail.data ? (
-                      <Badge tone="info">
-                        {detail.data.chunkCount} chunks
-                      </Badge>
-                    ) : null
+                    detail.data ? <Badge tone="info">{detail.data.chunkCount} chunks</Badge> : null
                   }
                 />
                 {detail.isLoading ? (
@@ -294,18 +285,13 @@ function PolicyRow({
       onClick={onSelect}
     >
       <div className="min-w-0">
-        <p className="truncate text-xs font-medium text-foreground">
-          {policy.name}
-        </p>
+        <p className="truncate text-xs font-medium text-foreground">{policy.name}</p>
         <p className="mt-0.5 text-[11px] text-subtle">
-          v{policy.version} &middot; {policy.sourceType} &middot;{" "}
-          {shortDate(policy.createdAt)}
+          v{policy.version} &middot; {policy.sourceType} &middot; {shortDate(policy.createdAt)}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
-        <Badge tone={policy.status === "ACTIVE" ? "success" : "neutral"}>
-          {policy.status}
-        </Badge>
+        <Badge tone={policy.status === "ACTIVE" ? "success" : "neutral"}>{policy.status}</Badge>
         <button
           type="button"
           onClick={(e) => {

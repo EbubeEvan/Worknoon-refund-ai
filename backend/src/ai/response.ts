@@ -46,9 +46,7 @@ function buildUserPrompt(params: {
   orderNumber: string | null;
 }): string {
   const policyText = params.chunks.length
-    ? params.chunks
-        .map((c, i) => `[Excerpt ${i + 1}]\n${c.content}`)
-        .join("\n\n")
+    ? params.chunks.map((c, i) => `[Excerpt ${i + 1}]\n${c.content}`).join("\n\n")
     : "(no policy excerpt retrieved)";
 
   return `Decision already made by the rules engine: ${params.decision} (${DECISION_LABEL[params.decision]})
@@ -87,13 +85,14 @@ export async function generateCustomerResponse(params: {
 
     // LangChain types message content as `string | (ContentBlock | Text)[]`.
     const content = result.content;
-    const text = (typeof content === "string"
-      ? content
-      : content
-          .map((part) =>
-            typeof part === "string" ? part : "text" in part ? String(part.text ?? "") : "",
-          )
-          .join("")
+    const text = (
+      typeof content === "string"
+        ? content
+        : content
+            .map((part) =>
+              typeof part === "string" ? part : "text" in part ? String(part.text ?? "") : "",
+            )
+            .join("")
     ).trim();
 
     if (!text) {

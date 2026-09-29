@@ -17,12 +17,7 @@ export function Card({
   children: ReactNode;
 }>) {
   return (
-    <div
-      className={cn(
-        "rounded-xl border border-border bg-surface shadow-sm",
-        className,
-      )}
-    >
+    <div className={cn("rounded-xl border border-border bg-surface shadow-sm", className)}>
       {children}
     </div>
   );
@@ -41,9 +36,7 @@ export function CardHeader({
     <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
       <div>
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        {description ? (
-          <p className="mt-0.5 text-xs text-muted">{description}</p>
-        ) : null}
+        {description ? <p className="mt-0.5 text-xs text-muted">{description}</p> : null}
       </div>
       {action}
     </div>
@@ -68,16 +61,12 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 const BUTTON_VARIANTS = {
   primary: "bg-primary text-white hover:bg-primary-hover border-transparent",
   secondary: "bg-surface text-foreground hover:bg-surface-muted border-border",
-  ghost: "bg-transparent text-muted hover:text-foreground hover:bg-surface-muted border-transparent",
+  ghost:
+    "bg-transparent text-muted hover:text-foreground hover:bg-surface-muted border-transparent",
   danger: "bg-denied text-white hover:opacity-90 border-transparent",
 } as const;
 
-export function Button({
-  className,
-  variant = "primary",
-  size = "md",
-  ...props
-}: ButtonProps) {
+export function Button({ className, variant = "primary", size = "md", ...props }: ButtonProps) {
   return (
     <button
       {...props}
@@ -122,9 +111,7 @@ export function Label({
   );
 }
 
-export function Textarea(
-  props: Readonly<React.TextareaHTMLAttributes<HTMLTextAreaElement>>,
-) {
+export function Textarea(props: Readonly<React.TextareaHTMLAttributes<HTMLTextAreaElement>>) {
   return (
     <textarea
       {...props}
@@ -197,9 +184,7 @@ export function Stat({
 }>) {
   return (
     <Card className="px-5 py-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-subtle">
-        {label}
-      </p>
+      <p className="text-xs font-medium uppercase tracking-wide text-subtle">{label}</p>
       <p
         className={cn(
           "mt-1.5 text-2xl font-semibold tabular-nums",
@@ -228,9 +213,7 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-5 py-12 text-center">
       <p className="text-sm font-medium text-foreground">{title}</p>
-      {description ? (
-        <p className="max-w-sm text-xs text-muted">{description}</p>
-      ) : null}
+      {description ? <p className="max-w-sm text-xs text-muted">{description}</p> : null}
       {action}
     </div>
   );

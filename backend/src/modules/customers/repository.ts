@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db/client.js";
 import { customers } from "../../db/schema/index.js";
 
@@ -25,11 +25,7 @@ export async function findCustomerById(id: string): Promise<CustomerRecord | nul
 }
 
 export async function findCustomerByUserId(userId: string): Promise<CustomerRecord | null> {
-  const [row] = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.userId, userId))
-    .limit(1);
+  const [row] = await db.select().from(customers).where(eq(customers.userId, userId)).limit(1);
   return row ?? null;
 }
 
@@ -40,10 +36,7 @@ export interface CustomerWithStats extends CustomerRecord {
 }
 
 /** Customer profile plus aggregate spend, for the admin customer list. */
-export async function listCustomersWithStats(
-  limit = 50,
-  offset = 0,
-): Promise<CustomerWithStats[]> {
+export async function listCustomersWithStats(limit = 50, offset = 0): Promise<CustomerWithStats[]> {
   const rows = await db
     .select({
       id: customers.id,

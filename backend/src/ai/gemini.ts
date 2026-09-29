@@ -1,4 +1,4 @@
-import { ChatGoogleGenerativeAI , GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { TaskType } from "@google/generative-ai";
 import { CHAT_LIMITS, CHAT_MODEL, EMBED_DIM, EMBED_MODEL } from "../config/ai.js";
 import { env } from "../config/env.js";

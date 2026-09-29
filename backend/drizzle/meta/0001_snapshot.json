@@ -132,12 +132,8 @@
           "name": "accounts_user_id_users_id_fk",
           "tableFrom": "accounts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -322,12 +318,8 @@
           "name": "customers_user_id_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -454,12 +446,8 @@
           "name": "orders_customer_id_customers_id_fk",
           "tableFrom": "orders",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -469,9 +457,7 @@
         "orders_order_number_unique": {
           "name": "orders_order_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "order_number"
-          ]
+          "columns": ["order_number"]
         }
       },
       "policies": {},
@@ -659,12 +645,8 @@
           "name": "policy_chunks_policy_id_policies_id_fk",
           "tableFrom": "policy_chunks",
           "tableTo": "policies",
-          "columnsFrom": [
-            "policy_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["policy_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -837,12 +819,8 @@
           "name": "refund_requests_customer_id_customers_id_fk",
           "tableFrom": "refund_requests",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -850,12 +828,8 @@
           "name": "refund_requests_order_id_orders_id_fk",
           "tableFrom": "refund_requests",
           "tableTo": "orders",
-          "columnsFrom": [
-            "order_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["order_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -949,12 +923,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -964,9 +934,7 @@
         "sessions_token_unique": {
           "name": "sessions_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -1057,9 +1025,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -1138,81 +1104,47 @@
     "public.actor_type": {
       "name": "actor_type",
       "schema": "public",
-      "values": [
-        "USER",
-        "SYSTEM"
-      ]
+      "values": ["USER", "SYSTEM"]
     },
     "public.decision": {
       "name": "decision",
       "schema": "public",
-      "values": [
-        "APPROVED",
-        "DENIED",
-        "ESCALATED"
-      ]
+      "values": ["APPROVED", "DENIED", "ESCALATED"]
     },
     "public.order_status": {
       "name": "order_status",
       "schema": "public",
-      "values": [
-        "PENDING",
-        "SHIPPED",
-        "DELIVERED",
-        "CANCELLED"
-      ]
+      "values": ["PENDING", "SHIPPED", "DELIVERED", "CANCELLED"]
     },
     "public.policy_source_type": {
       "name": "policy_source_type",
       "schema": "public",
-      "values": [
-        "pdf",
-        "markdown",
-        "text"
-      ]
+      "values": ["pdf", "markdown", "text"]
     },
     "public.policy_status": {
       "name": "policy_status",
       "schema": "public",
-      "values": [
-        "ACTIVE",
-        "INACTIVE"
-      ]
+      "values": ["ACTIVE", "INACTIVE"]
     },
     "public.refund_reason": {
       "name": "refund_reason",
       "schema": "public",
-      "values": [
-        "damaged",
-        "incorrect_item",
-        "changed_mind",
-        "other"
-      ]
+      "values": ["damaged", "incorrect_item", "changed_mind", "other"]
     },
     "public.refund_request_status": {
       "name": "refund_request_status",
       "schema": "public",
-      "values": [
-        "SUBMITTED",
-        "DECIDED"
-      ]
+      "values": ["SUBMITTED", "DECIDED"]
     },
     "public.refund_status": {
       "name": "refund_status",
       "schema": "public",
-      "values": [
-        "NONE",
-        "REQUESTED",
-        "REFUNDED"
-      ]
+      "values": ["NONE", "REQUESTED", "REFUNDED"]
     },
     "public.role": {
       "name": "role",
       "schema": "public",
-      "values": [
-        "CUSTOMER",
-        "ADMIN"
-      ]
+      "values": ["CUSTOMER", "ADMIN"]
     }
   },
   "schemas": {},
