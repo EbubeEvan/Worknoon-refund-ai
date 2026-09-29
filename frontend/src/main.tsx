@@ -6,7 +6,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { AuthProvider } from "./lib/auth.js";
-import { routeTree } from "./routes/tree.js";
+import { routeTree } from "./routeTree.gen.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {

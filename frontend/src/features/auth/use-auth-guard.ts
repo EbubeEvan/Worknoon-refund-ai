@@ -1,44 +1,8 @@
-import { createRootRoute, Link, Outlet, useRouter } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { InboxIcon } from "@/components/icons.js";
-import { Spinner } from "@/components/ui.js";
 import type { SessionUser } from "@/lib/api.js";
 import { useAuth } from "@/lib/auth.js";
-
-/**
- * Root route: layout, 404, and the shared auth guard.
- */
-
-export const rootRoute = createRootRoute({
-  component: RootLayout,
-  notFoundComponent: NotFound,
-});
-
-function RootLayout() {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Outlet />
-    </div>
-  );
-}
-
-function NotFound() {
-  return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 p-8 text-center">
-      <span className="grid size-12 place-items-center rounded-2xl bg-surface-muted text-subtle ring-1 ring-border ring-inset">
-        <InboxIcon size="size-5" />
-      </span>
-      <div>
-        <p className="text-lg font-semibold tracking-tight">Page not found</p>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-muted">That page does not exist.</p>
-      </div>
-      <Link to="/" className="text-[13px] font-medium text-primary hover:underline">
-        Go back
-      </Link>
-    </main>
-  );
-}
 
 /**
  * Gate a branch of the tree on authentication and role.
@@ -78,12 +42,4 @@ export function useAuthGuard(
   const isReady = !isLoading && !needsRedirect && Boolean(user);
 
   return { user, isAdmin, isReady };
-}
-
-export function FullPageSpinner() {
-  return (
-    <div className="flex min-h-screen items-center justify-center text-muted">
-      <Spinner className="size-6" />
-    </div>
-  );
 }

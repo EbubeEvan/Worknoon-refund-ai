@@ -2,7 +2,9 @@ import { Link, useRouter } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { LogOutIcon, ShieldIcon } from "@/components/icons.js";
-import { Avatar, Badge, Button } from "@/components/ui.js";
+import { Avatar } from "@/components/ui/avatar.js";
+import { Badge } from "@/components/ui/badge.js";
+import { Button } from "@/components/ui/button.js";
 import { useAuth } from "@/lib/auth.js";
 
 /**

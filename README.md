@@ -156,8 +156,9 @@ backend/    Express + Drizzle + pgvector
   scripts/        seed, reset, retrieval smoke test, e2e suite
 frontend/   React + Vite + TanStack Router/Query
   src/lib/        typed API client, auth context, formatting
-  src/routes/     code-based route tree and the auth guard
-  src/pages/      login, customer workspace, admin dashboard/policies/audit
+  src/routes/     file-based routes (createFileRoute only; tree is generated)
+  src/features/   auth, customer workspace, admin dashboard/policies/audit
+  src/components/ app shell, icons, and ui/ primitives (one per file)
 ```
 
 Backend modules follow a consistent shape: `routes.ts` (wiring) ->
