@@ -1,0 +1,80 @@
+# ==============================================================================
+# Single-command stack:  docker compose up --build
+#
+#   db    - PostgreSQL + pgvector (transactional store + policy vector index)
+#   api   - Express 5 + Drizzle + LangChain/Gemini (all decision logic lives here)
+#   web   - nginx serving the built React SPA and proxying /api -> api
+#
+# The browser only ever talks to `web`. One origin, no CORS, no exposed API keys.
+# ==============================================================================
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: refund-db
+    restart: unless-stopped
+    # env_file (not `environment:`) so credentials live in exactly one place.
+    env_file:
+      - .env.local
+    environment:
+      # Deterministic collation so ORDER BY does not drift between machines.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    ports:
+      # Published on 5433 by default: a local PostgreSQL often owns 5432 already.
+      # Only for host-side psql / drizzle-kit. Containers always use db:5432.
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      # Expanded inside the container, where POSTGRES_USER is set by env_file.
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: refund-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      # Inside the compose network the database is `db`, never localhost.
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      # Inside the compose network the API is reachable as `api`, not localhost.
+      BETTER_AUTH_URL: http://api:4000
+      # Allow the browser origin (nginx) to send credentialed requests.
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e \"fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: refund-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+
+volumes:
+  db-data:

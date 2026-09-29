@@ -1,0 +1,17 @@
+{
+  "devDependencies": {
+    "@types/node": "^26.6.3"
+  },
+  "name": "worknoon-refund-ai",
+  "private": true,
+  "scripts": {
+    "up": "docker compose up -d --build",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f api",
+    "reset:demo": "npm --prefix backend run reset:demo",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "test": "npm --prefix backend run test",
+    "e2e": "npm --prefix backend exec tsx scripts/e2e-refund-flow.ts",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+  }
+}

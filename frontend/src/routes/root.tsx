@@ -1,0 +1,82 @@
+import { createRootRoute, Outlet, useRouter } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth.js";
+import type { SessionUser } from "@/lib/api.js";
+import { Spinner } from "@/components/ui.js";
+
+/**
+ * Root route: layout, 404, and the shared auth guard.
+ */
+
+export const rootRoute = createRootRoute({
+  component: RootLayout,
+  notFoundComponent: NotFound,
+});
+
+function RootLayout() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Outlet />
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-2 p-8 text-center">
+      <p className="text-lg font-semibold">Page not found</p>
+      <p className="text-sm text-muted">
+        That page does not exist.{" "}
+        <a href="/" className="text-primary hover:underline">
+          Go back
+        </a>
+        .
+      </p>
+    </main>
+  );
+}
+
+/**
+ * Gate a branch of the tree on authentication and role.
+ *
+ * UX only. Every protected endpoint authorizes server-side, so bypassing this
+ * in the browser reveals nothing a signed-in user could not already fetch.
+ *
+ * Returns state rather than JSX so pages can call their data hooks
+ * unconditionally: a hook that sometimes returns an element and sometimes an
+ * object would force every caller to re-narrow the result.
+ */
+export interface AuthGuardState {
+  user: SessionUser | null;
+  isAdmin: boolean;
+  /** False while the session is loading, or while a redirect is in flight. */
+  isReady: boolean;
+}
+
+export function useAuthGuard(opts: { requireAdmin?: boolean } = {}): AuthGuardState {
+  const { user, isLoading, isAdmin } = useAuth();
+  const router = useRouter();
+  const [redirecting, setRedirecting] = useState(false);
+
+  const needsRedirect = !isLoading && (!user || (opts.requireAdmin && !isAdmin));
+
+  useEffect(() => {
+    if (!needsRedirect) return;
+    setRedirecting(true);
+    void router.navigate({
+      to: !user ? "/login" : "/customer",
+    });
+  }, [needsRedirect, user, router]);
+
+  const isReady = !isLoading && !needsRedirect && !redirecting && Boolean(user);
+
+  return { user, isAdmin, isReady };
+}
+
+export function FullPageSpinner() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <Spinner className="size-6" />
+    </div>
+  );
+}

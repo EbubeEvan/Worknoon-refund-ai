@@ -1,0 +1,1 @@
+ALTER TABLE "refund_requests" ADD COLUMN "approved_amount_cents" integer;

@@ -1,0 +1,34 @@
+# ---- Secrets (NEVER COMMIT) ----
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ---- Node ----
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+
+# ---- Build output ----
+dist/
+build/
+frontend/dist/
+backend/dist/
+*.tsbuildinfo
+
+# ---- Test / coverage ----
+coverage/
+.vitest/
+
+# ---- Editor / OS ----
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# ---- Local scratch ----
+tmp/
+*.local.json

@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.env.*
+*.log
+coverage
+src/tests
+**/*.test.ts
+# NOTE: drizzle/ (SQL migrations) is intentionally NOT ignored - the runtime
+# image needs it to apply migrations on boot.
