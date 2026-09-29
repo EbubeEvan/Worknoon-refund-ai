@@ -25,7 +25,7 @@ injected), and is a first-match-wins ladder ending in a default-deny rule.
 
 Consequences worth the cost:
 
-- 40 unit tests cover it without a database, including one per rule code.
+- 35 unit tests cover it without a database, including one per rule code.
 - Replaying a historical decision is a pure function call, which is what makes
   the audit trail meaningful.
 - Two code paths that reach the same outcome must agree. Manual escalation
@@ -58,7 +58,8 @@ All amounts are integer cents. `requested_amount_cents` and
 `approved_amount_cents` are separate columns because they frequently differ: the
 policy issues a damaged-item refund at the full value of the order line, whatever
 the customer asked for. Conflating them would misreport refunds and make the
-audit trail lie.
+audit trail lie. The requested amount is recorded but never reaches the engine:
+`PolicyFacts` has no field for it, so every limit and payout comes from the order.
 
 The approval transaction locks the order row and re-checks `refund_status`
 before writing. Without the lock, two concurrent submissions on the same order
@@ -106,7 +107,7 @@ decision it records.
 
 ## Testing strategy
 
-- **Unit (57 tests, no I/O).** Every policy rule code, injection patterns, and
+- **Unit (53 tests, no I/O).** Every policy rule code, injection patterns, and
   the extraction wire-schema mapping.
 - **E2E (48 checks, live HTTP).** Every policy branch, cross-customer isolation,
   replay protection, duplicate suppression, admin surfaces, and now manual

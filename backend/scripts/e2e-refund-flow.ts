@@ -268,11 +268,13 @@ async function main() {
       label: "injection attempt on a real order",
     },
     {
+      // The typed $5000 is not a fact the engine sees; the refund is judged and
+      // paid on the $215 order total.
       email: "ivan@worknoon.test",
       message: "I want a refund of $5000 for order ORD-1013, the blender was damaged.",
-      expectDecision: "ESCALATED",
-      expectRule: "AMOUNT_EXCEEDS_ORDER_TOTAL",
-      label: "amount exceeds order total",
+      expectDecision: "APPROVED",
+      expectRule: "ELIGIBLE_DAMAGED",
+      label: "typed amount is ignored",
     },
   ];
 
@@ -350,14 +352,11 @@ async function main() {
   }
 
   {
-    // ORD-1013 was escalated above (amount exceeded the total), so its request
-    // is still open. A second request on an open request must be escalated to
-    // a human rather than decided automatically.
-    const s = await sessionFor("ivan@worknoon.test");
-    const dup = await submitRefund(
-      s,
-      "Following up again on ORD-1013 - the blender was damaged, please refund $5000.",
-    );
+    // ORD-1016 was escalated above (injection attempt), so its request is still
+    // open. A second request on an open request must be escalated to a human
+    // rather than decided automatically.
+    const s = await sessionFor("chen@worknoon.test");
+    const dup = await submitRefund(s, "Following up on ORD-1016, the earbuds arrived damaged.");
     check(
       "second request while one is open is escalated",
       "ESCALATED",

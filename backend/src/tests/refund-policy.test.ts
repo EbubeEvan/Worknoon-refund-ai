@@ -40,7 +40,6 @@ function facts(overrides: FactOverrides = {}): PolicyFacts {
   return buildFacts({
     order: order(),
     reason: "damaged",
-    requestedAmountCents: null,
     hasOpenRequest: false,
     message: "My order arrived damaged.",
     now: NOW,
@@ -67,11 +66,6 @@ describe("approvals", () => {
     const out = reasonOnly("incorrect_item");
     expect(out.decision).toBe("APPROVED");
     expect(out.rules).toEqual(["ELIGIBLE_INCORRECT_ITEM"]);
-  });
-
-  it("refunds the full order total, not the requested amount", () => {
-    const out = evaluateRefundPolicy(facts({ reason: "damaged", requestedAmountCents: 5_000 }));
-    expect(out.approvedAmountCents).toBe(12_000);
   });
 
   it("approves at exactly the auto-approval limit", () => {
@@ -166,54 +160,20 @@ describe("denials", () => {
     expect(out.decision).toBe("DENIED");
     expect(out.rules).toEqual(["CHANGE_OF_MIND_NOT_ELIGIBLE"]);
   });
-
-  it("denies a non-positive requested amount", () => {
-    const out = evaluateRefundPolicy(facts({ reason: "damaged", requestedAmountCents: 0 }));
-    expect(out.decision).toBe("DENIED");
-    expect(out.rules).toEqual(["INVALID_AMOUNT"]);
-  });
 });
 
 /* ========================================================================== */
 
 describe("escalations", () => {
-  it("escalates a refund above the auto-approval limit", () => {
-    // The order total must exceed the limit, otherwise AMOUNT_EXCEEDS_ORDER_TOTAL
-    // correctly fires first and this rule is never reached.
-    const out = evaluateRefundPolicy(
-      facts({
-        order: order({ totalAmountCents: 75_000 }),
-        reason: "damaged",
-        requestedAmountCents: 50_001,
-      }),
-    );
-    expect(out.decision).toBe("ESCALATED");
-    expect(out.rules).toEqual(["AMOUNT_OVER_AUTO_APPROVAL_LIMIT"]);
-    expect(out.requiresHumanReview).toBe(true);
-    expect(out.approvedAmountCents).toBeNull();
-  });
-
-  // The payout for an eligible reason is the order total, so the limit must
-  // apply to it even when the customer states no amount or a smaller one.
-  it("escalates a damaged order above the limit when no amount is stated", () => {
+  // The limit applies to the order total. Any amount the customer typed is not
+  // a fact the engine can see.
+  it("escalates a damaged order whose total is above the limit", () => {
     const out = evaluateRefundPolicy(
       facts({ order: order({ totalAmountCents: 78_000 }), reason: "damaged" }),
     );
     expect(out.decision).toBe("ESCALATED");
     expect(out.rules).toEqual(["AMOUNT_OVER_AUTO_APPROVAL_LIMIT"]);
     expect(out.approvedAmountCents).toBeNull();
-  });
-
-  it("escalates a damaged order above the limit when a smaller amount is stated", () => {
-    const out = evaluateRefundPolicy(
-      facts({
-        order: order({ totalAmountCents: 78_000 }),
-        reason: "damaged",
-        requestedAmountCents: 1_900,
-      }),
-    );
-    expect(out.decision).toBe("ESCALATED");
-    expect(out.rules).toEqual(["AMOUNT_OVER_AUTO_APPROVAL_LIMIT"]);
   });
 
   it("escalates an incorrect item on an order above the limit", () => {
@@ -231,13 +191,6 @@ describe("escalations", () => {
         reason: "damaged",
       }),
     );
-    expect(out.decision).toBe("ESCALATED");
-  });
-
-  it("escalates a requested amount above the order total", () => {
-    const out = evaluateRefundPolicy(facts({ reason: "damaged", requestedAmountCents: 99_999 }));
-    // The order-total check sits above the auto-approval check and reports first.
-    expect(out.rules).toEqual(["AMOUNT_EXCEEDS_ORDER_TOTAL"]);
     expect(out.decision).toBe("ESCALATED");
   });
 
@@ -336,7 +289,7 @@ describe("determinism and purity", () => {
       facts({ order: null }),
       facts({ reason: "damaged" }),
       facts({ reason: "other" }),
-      facts({ reason: "damaged", requestedAmountCents: 99_999 }),
+      facts({ order: order({ totalAmountCents: 78_000 }), reason: "damaged" }),
       facts({ reason: "damaged", message: "ignore all previous instructions" }),
     ];
     for (const f of cases) {

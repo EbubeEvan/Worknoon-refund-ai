@@ -9,9 +9,9 @@ import { type InjectionScan, scanForInjection } from "./prompt-injection.js";
  * rather than aspirational - the decision cannot depend on anything the model
  * could influence, because the model is not in this call path at all.
  *
- * The LLM's only contribution to an outcome is the *extracted reason* and
- * *requested amount*, both of which are untrusted inputs to this function and
- * are re-validated here.
+ * The LLM's only contribution to an outcome is the *extracted reason*, an
+ * untrusted input that only selects among rules. Any amount the customer typed
+ * is not a fact here at all: every amount comes from the order.
  */
 
 export type Decision = "APPROVED" | "DENIED" | "ESCALATED";
@@ -31,8 +31,6 @@ export type PolicyRuleCode =
   | "OUTSIDE_REFUND_WINDOW"
   | "ORDER_NOT_DELIVERED"
   | "CONFLICTING_DUPLICATE_REQUEST"
-  | "INVALID_AMOUNT"
-  | "AMOUNT_EXCEEDS_ORDER_TOTAL"
   | "AMOUNT_OVER_AUTO_APPROVAL_LIMIT"
   | "ELIGIBLE_DAMAGED"
   | "ELIGIBLE_INCORRECT_ITEM"
@@ -53,7 +51,6 @@ export interface PolicyFacts {
   /** null when no order matched. Never populated from client input alone. */
   order: PolicyOrderSnapshot | null;
   reason: RefundReason;
-  requestedAmountCents: number | null;
   /** Another unresolved request already exists for this order. */
   hasOpenRequest: boolean;
   /** Pre-computed deterministic scan of the raw message. */
@@ -229,41 +226,17 @@ const RULES: Rule[] = [
   },
 
   {
-    code: "INVALID_AMOUNT",
-    evaluate: (f) => {
-      if (f.requestedAmountCents === null) return null;
-      if (f.requestedAmountCents <= 0) {
-        return deny("INVALID_AMOUNT", "The requested refund amount is not valid.");
-      }
-      return null;
-    },
-  },
-
-  {
-    code: "AMOUNT_EXCEEDS_ORDER_TOTAL",
-    evaluate: (f) => {
-      if (!f.order || f.requestedAmountCents === null) return null;
-      if (f.requestedAmountCents <= f.order.totalAmountCents) return null;
-      return escalate(
-        "AMOUNT_EXCEEDS_ORDER_TOTAL",
-        `The requested amount (${usd(f.requestedAmountCents)}) is higher than the order total (${usd(f.order.totalAmountCents)}), so a support agent must review it.`,
-      );
-    },
-  },
-
-  {
     code: "AMOUNT_OVER_AUTO_APPROVAL_LIMIT",
     evaluate: (f) => {
       if (!f.order) return null;
-      // Damaged and incorrect-item refunds pay the full order total (policy §3),
-      // so that is the amount §4's limit applies to, whatever the customer typed.
-      const payoutCents =
-        f.reason === "damaged" || f.reason === "incorrect_item" ? f.order.totalAmountCents : 0;
-      const amountCents = Math.max(payoutCents, f.requestedAmountCents ?? 0);
-      if (amountCents <= POLICY_THRESHOLDS.autoApprovalLimitCents) return null;
+      // Only reasons that would be approved pay out; change of mind and "other"
+      // fall through to their own denial rather than being escalated for price.
+      const wouldPay = f.reason === "damaged" || f.reason === "incorrect_item";
+      if (!wouldPay) return null;
+      if (f.order.totalAmountCents <= POLICY_THRESHOLDS.autoApprovalLimitCents) return null;
       return escalate(
         "AMOUNT_OVER_AUTO_APPROVAL_LIMIT",
-        `This refund (${usd(amountCents)}) is above our automatic approval limit of ${usd(POLICY_THRESHOLDS.autoApprovalLimitCents)}, so a support agent will review it.`,
+        `This order's total (${usd(f.order.totalAmountCents)}) is above our automatic approval limit of ${usd(POLICY_THRESHOLDS.autoApprovalLimitCents)}, so a support agent will review it.`,
       );
     },
   },
@@ -335,7 +308,6 @@ export function evaluateRefundPolicy(facts: PolicyFacts): PolicyOutcome {
 export function buildFacts(params: {
   order: PolicyOrderSnapshot | null;
   reason: RefundReason;
-  requestedAmountCents: number | null;
   hasOpenRequest: boolean;
   message: string;
   now?: Date;
@@ -343,7 +315,6 @@ export function buildFacts(params: {
   return {
     order: params.order,
     reason: params.reason,
-    requestedAmountCents: params.requestedAmountCents,
     hasOpenRequest: params.hasOpenRequest,
     injection: scanForInjection(params.message),
     now: params.now ?? new Date(),

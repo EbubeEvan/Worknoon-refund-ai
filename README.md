@@ -80,7 +80,7 @@ npm run lint:fix      # eslint --fix
 npm run format        # prettier --write
 npm run format:check  # prettier --check
 npm run typecheck     # tsc: backend/src, backend/scripts, frontend
-npm test              # 57 unit tests (policy engine + AI seam)
+npm test              # 53 unit tests (policy engine + AI seam)
 npm run e2e           # 48-check live end-to-end suite
 npm run reset:demo    # wipe orders/requests and re-seed
 npm run build         # compile both packages

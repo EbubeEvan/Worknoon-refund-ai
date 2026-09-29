@@ -72,7 +72,9 @@ order data.
 ## 4. Refund amounts requiring manual approval
 
 Refunds **above $500** are not auto-approved and are routed to a support agent for
-manual review. This limit applies to the total refund amount, not to a single order line.
+manual review. This limit applies to the **order total**, not to a single order line.
+Any amount the customer mentions in their request is not used: refunds are always
+assessed and issued against the order value on record.
 
 - The manual review step exists for fraud prevention and for high-value shipments.
 - Manual review normally completes within two business days.
@@ -95,8 +97,6 @@ manual review. This limit applies to the total refund amount, not to a single or
 - **Undelivered orders**: a damage or incorrect-item claim cannot be substantiated for an
   order that has not yet been delivered. The customer should contact support after
   delivery.
-- **Amounts exceeding the order total**: a request for more than was paid is escalated
-  for manual review, since it usually indicates a customer error or an attempted abuse.
 
 ## 7. Suspicious and conflicting requests
 
@@ -106,7 +106,7 @@ A refund request is routed to manual review when it presents a risk signal, incl
   internal system prompts.
 - Claims of special authority - legal, administrative, or technical - used to demand an
   exception.
-- Requests to refund every order, or for amounts unrelated to the order in question.
+- Requests to refund every order.
 - Internal contradictions between the stated reason and the order contents.
 
 Suspicion never results in an automatic approval. At most it forces a human decision.

@@ -44,6 +44,7 @@ const FRIENDLY_RULES: Record<string, string> = {
   OUTSIDE_REFUND_WINDOW: "Outside the refund window",
   ORDER_NOT_DELIVERED: "Not delivered yet",
   CONFLICTING_DUPLICATE_REQUEST: "Duplicate request",
+  // Retired rules; kept so historical decisions still render.
   INVALID_AMOUNT: "Invalid amount",
   AMOUNT_EXCEEDS_ORDER_TOTAL: "More than the order total",
   AMOUNT_OVER_AUTO_APPROVAL_LIMIT: "Over the instant-approval amount",

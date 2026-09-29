@@ -203,7 +203,8 @@ export async function extractRefundIntent(message: string): Promise<ExtractionRe
  * reason into the facts the policy engine consumes.
  *
  * The engine re-reads `injection` from the raw message, so an injection cannot
- * be laundered through the model.
+ * be laundered through the model. The extracted amount is deliberately left
+ * out: it is stored for the record, but only order data can decide.
  */
 export function toPolicyFacts(params: {
   extraction: ExtractionResult;
@@ -215,7 +216,6 @@ export function toPolicyFacts(params: {
   return buildFacts({
     order: params.order,
     reason: params.extraction.reason,
-    requestedAmountCents: params.extraction.requestedAmountCents,
     hasOpenRequest: params.hasOpenRequest,
     message: params.message,
     now: params.now,

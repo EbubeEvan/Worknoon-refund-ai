@@ -4,6 +4,7 @@ import {
   normaliseOrderNumber,
   refundIntentSchema,
   refundIntentWireSchema,
+  toPolicyFacts,
   wireToIntent,
 } from "../ai/extraction.js";
 
@@ -144,5 +145,25 @@ describe("wireToIntent", () => {
       requestedAmount: 0,
     });
     expect(refundIntentSchema.safeParse(result).success).toBe(true);
+  });
+});
+
+describe("toPolicyFacts", () => {
+  it("never hands the engine the amount the customer typed", () => {
+    const facts = toPolicyFacts({
+      extraction: {
+        intent: "refund_request",
+        orderNumber: "ORD-1001",
+        reason: "damaged",
+        requestedAmountCents: 999_999,
+        source: "gemini",
+        degradedReason: null,
+        raw: null,
+      },
+      message: "ORD-1001 arrived damaged, refund me $9999.99.",
+      order: null,
+      hasOpenRequest: false,
+    });
+    expect(facts).not.toHaveProperty("requestedAmountCents");
   });
 });
