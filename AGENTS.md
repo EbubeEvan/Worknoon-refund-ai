@@ -18,7 +18,7 @@ Both must exit 0. A change that only "looks right" is not finished:
   usage. The hook rules here are compiler-backed and have caught real bugs in
   this repo.
 - `npm run build` typechecks `backend/src`, `backend/scripts`, and
-  `frontend/src`. `backend/scripts` includes the seed and the 48-check e2e
+  `frontend/src`. `backend/scripts` includes the seed and the 58-check e2e
   suite, which are easy to break silently.
 
 If you changed formatting or imports, also run:
@@ -45,7 +45,7 @@ include the e2e suite — see below.
 
 ### Tests
 
-`npm test` runs 53 unit tests in under a second. They cover every policy rule
+`npm test` runs 63 unit tests in under a second. They cover every policy rule
 code, so they are the fastest possible signal that the money-moving logic is
 still correct. The husky `pre-push` hook runs them, but run them yourself rather
 than assuming the hook fired.

@@ -130,6 +130,8 @@ export interface RefundRequestResult {
   rules: string[];
   requiresHumanReview: boolean;
   approvedAmountCents: number | null;
+  /** The refund-policy clause the decision applies, e.g. "§2 Final sale items". */
+  clause: string;
   summary: string;
   reply: { text: string; source: "gemini" | "deterministic"; degradedReason: string | null };
   explain: {
@@ -226,10 +228,11 @@ export const endpoints = {
 
   dashboard: () => api.get<DashboardData>("/admin/dashboard"),
   escalations: () => api.get<{ requests: RefundRequest[] }>("/admin/escalations"),
-  resolveEscalation: (id: string, resolve: "APPROVE" | "DENY", note?: string) =>
+  /** `lines` are indices into the order's items; omit to refund every returnable line. */
+  resolveEscalation: (id: string, resolve: "APPROVE" | "DENY", note?: string, lines?: number[]) =>
     api.post<{ ok: boolean; approvedAmountCents: number | null }>(
       `/admin/escalations/${id}/resolve`,
-      { resolve, note },
+      { resolve, note, lines },
     ),
   customers: () => api.get<{ customers: CustomerWithStats[] }>("/admin/customers"),
   adminOrders: () => api.get<{ orders: OrderWithCustomer[] }>("/admin/orders"),

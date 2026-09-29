@@ -12,6 +12,9 @@ import { type InjectionScan, scanForInjection } from "./prompt-injection.js";
  * The LLM's only contribution to an outcome is the *extracted reason*, an
  * untrusted input that only selects among rules. Any amount the customer typed
  * is not a fact here at all: every amount comes from the order.
+ *
+ * Each rule implements a clause of seed/policies/refund-policy.md, and every
+ * outcome names the clause it came from.
  */
 
 export type Decision = "APPROVED" | "DENIED" | "ESCALATED";
@@ -23,19 +26,31 @@ export type RefundStatus = "NONE" | "REQUESTED" | "REFUNDED";
 
 /** Stable machine-readable rule codes, persisted on every decision. */
 export type PolicyRuleCode =
+  | "ORDER_NUMBER_MISSING"
   | "ORDER_NOT_FOUND"
-  | "INJECTION_SUSPECTED"
   | "ORDER_CANCELLED"
   | "ALREADY_REFUNDED"
   | "FINAL_SALE"
   | "OUTSIDE_REFUND_WINDOW"
   | "ORDER_NOT_DELIVERED"
+  | "CHANGE_OF_MIND_NOT_ELIGIBLE"
+  | "INJECTION_SUSPECTED"
   | "CONFLICTING_DUPLICATE_REQUEST"
   | "AMOUNT_OVER_AUTO_APPROVAL_LIMIT"
+  | "DAMAGED_ITEM_NEEDS_REVIEW"
   | "ELIGIBLE_DAMAGED"
   | "ELIGIBLE_INCORRECT_ITEM"
-  | "CHANGE_OF_MIND_NOT_ELIGIBLE"
+  | "OTHER_REASON_NEEDS_REVIEW"
   | "DEFAULT_DENY";
+
+/** One order line, as recorded at purchase. */
+export interface PolicyOrderLine {
+  name: string;
+  quantity: number;
+  unitAmountCents: number;
+  /** Absent means the line is returnable. */
+  finalSale?: boolean;
+}
 
 export interface PolicyOrderSnapshot {
   id: string;
@@ -45,9 +60,12 @@ export interface PolicyOrderSnapshot {
   purchasedAt: Date;
   refundStatus: RefundStatus;
   status: OrderStatus;
+  items: PolicyOrderLine[];
 }
 
 export interface PolicyFacts {
+  /** Whether the message contained an order number at all (policy §9). */
+  orderNumberProvided: boolean;
   /** null when no order matched. Never populated from client input alone. */
   order: PolicyOrderSnapshot | null;
   reason: RefundReason;
@@ -66,6 +84,8 @@ export interface PolicyOutcome {
   requiresHumanReview: boolean;
   /** Only set when APPROVED. */
   approvedAmountCents: number | null;
+  /** The refund-policy.md clause this outcome applies, e.g. "§2 Final sale items". */
+  clause: string;
   /** Deterministic, customer-safe explanation. The LLM only rephrases this. */
   summary: string;
 }
@@ -81,6 +101,10 @@ export const POLICY_THRESHOLDS = {
   autoApprovalLimitCents: 50_000,
 } as const;
 
+/** Policy §8 timelines, quoted in customer-facing summaries. */
+const APPROVED_TIMELINE = "It should appear on your statement within 5-10 business days.";
+const REVIEW_TIMELINE = "A support agent will decide within two business days.";
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function daysBetween(from: Date, to: Date): number {
@@ -92,11 +116,39 @@ function usd(cents: number): string {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Amounts - shared with the admin resolve path so both settle identically     */
+/* -------------------------------------------------------------------------- */
+
+export function lineCents(line: Pick<PolicyOrderLine, "quantity" | "unitAmountCents">): number {
+  return line.unitAmountCents * line.quantity;
+}
+
+/**
+ * The refundable value of an order: the full order value less any final-sale
+ * lines, which policy §2 excludes and recalculates around.
+ */
+export function returnableCents(
+  order: Pick<PolicyOrderSnapshot, "totalAmountCents" | "items">,
+): number {
+  const finalSaleCents = order.items
+    .filter((i) => i.finalSale)
+    .reduce((sum, i) => sum + lineCents(i), 0);
+  return order.totalAmountCents - finalSaleCents;
+}
+
+function isWhollyFinalSale(order: PolicyOrderSnapshot): boolean {
+  return order.isFinalSale || (order.items.length > 0 && order.items.every((i) => i.finalSale));
+}
+
+/* -------------------------------------------------------------------------- */
 /* The rule ladder                                                             */
 /*                                                                             */
-/* Evaluated top to bottom, first match wins. Ordering is a security property:  */
-/* INJECTION_SUSPECTED sits above every APPROVED rule, so no amount of         */
-/* manipulation in the message can produce an approval.                         */
+/* Evaluated top to bottom, first match wins. Ordering is a policy property:   */
+/*  - Every denial comes first. The window, final-sale status and the other    */
+/*    §6 exclusions cannot be overridden by an agent (§1, §2), so a request    */
+/*    they cover must never reach the escalation queue.                        */
+/*  - INJECTION_SUSPECTED sits above every APPROVED rule, so no amount of      */
+/*    manipulation in the message can produce an approval (§7).                */
 /* -------------------------------------------------------------------------- */
 
 interface Rule {
@@ -105,36 +157,67 @@ interface Rule {
   evaluate(f: PolicyFacts): PolicyOutcome | null;
 }
 
-const deny = (
-  code: PolicyRuleCode,
-  summary: string,
-  extra?: Partial<PolicyOutcome>,
-): PolicyOutcome => ({
+const deny = (code: PolicyRuleCode, clause: string, summary: string): PolicyOutcome => ({
   decision: "DENIED",
   rules: [code],
   requiresHumanReview: false,
   approvedAmountCents: null,
-  summary,
-  ...extra,
+  clause,
+  summary: `${summary} (Refund policy ${clause}.)`,
 });
 
-const escalate = (code: PolicyRuleCode, summary: string): PolicyOutcome => ({
+const escalate = (code: PolicyRuleCode, clause: string, summary: string): PolicyOutcome => ({
   decision: "ESCALATED",
   rules: [code],
   requiresHumanReview: true,
   approvedAmountCents: null,
-  summary,
+  clause,
+  summary: `${summary} ${REVIEW_TIMELINE}`,
 });
 
-const approve = (code: PolicyRuleCode, amountCents: number, summary: string): PolicyOutcome => ({
+const approve = (
+  code: PolicyRuleCode,
+  clause: string,
+  amountCents: number,
+  summary: string,
+): PolicyOutcome => ({
   decision: "APPROVED",
   rules: [code],
   requiresHumanReview: false,
   approvedAmountCents: amountCents,
-  summary,
+  clause,
+  summary: `${summary} Your refund of ${usd(amountCents)} has been initiated. ${APPROVED_TIMELINE}`,
 });
 
+const CLAUSE = {
+  window: "§1 Refund window",
+  finalSale: "§2 Final sale items",
+  damaged: "§3.1 Damaged on arrival",
+  incorrect: "§3.2 Incorrect item received",
+  changeOfMind: "§3.3 Change of mind",
+  other: "§3.4 Other reasons",
+  limit: "§4 Refund amounts requiring manual approval",
+  duplicate: "§5 Multiple and duplicate requests",
+  cannotRefund: "§6 Orders that cannot be refunded",
+  suspicious: "§7 Suspicious and conflicting requests",
+  orderNumber: "§9 Contacting support",
+} as const;
+
 const RULES: Rule[] = [
+  /* ---- Denials: final, never sent to an agent --------------------------- */
+
+  {
+    code: "ORDER_NUMBER_MISSING",
+    evaluate: (f) =>
+      f.orderNumberProvided
+        ? null
+        : deny(
+            "ORDER_NUMBER_MISSING",
+            CLAUSE.orderNumber,
+            "We couldn't find an order number in your message. Please send your request again with your order number (for example ORD-1001) so we can match it to your purchase.",
+          ),
+  },
+
   {
     code: "ORDER_NOT_FOUND",
     evaluate: (f) =>
@@ -142,28 +225,20 @@ const RULES: Rule[] = [
         ? null
         : deny(
             "ORDER_NOT_FOUND",
-            "We could not find an order matching that request on your account.",
+            CLAUSE.orderNumber,
+            "We could not find an order matching that order number on your account.",
           ),
-  },
-
-  // Placed immediately after ORDER_NOT_FOUND and above every approval rule.
-  // A message that tries to manipulate the system never reaches APPROVED.
-  {
-    code: "INJECTION_SUSPECTED",
-    evaluate: (f) =>
-      f.injection.detected
-        ? escalate(
-            "INJECTION_SUSPECTED",
-            "Your request was flagged for manual review by a support agent.",
-          )
-        : null,
   },
 
   {
     code: "ORDER_CANCELLED",
     evaluate: (f) =>
       f.order?.status === "CANCELLED"
-        ? deny("ORDER_CANCELLED", "This order was cancelled, so no refund is required.")
+        ? deny(
+            "ORDER_CANCELLED",
+            CLAUSE.cannotRefund,
+            "This order was cancelled and no payment was captured, so there is nothing to refund.",
+          )
         : null,
   },
 
@@ -171,17 +246,22 @@ const RULES: Rule[] = [
     code: "ALREADY_REFUNDED",
     evaluate: (f) =>
       f.order?.refundStatus === "REFUNDED"
-        ? deny("ALREADY_REFUNDED", "A refund has already been issued for this order.")
+        ? deny(
+            "ALREADY_REFUNDED",
+            CLAUSE.cannotRefund,
+            "A refund has already been issued for this order.",
+          )
         : null,
   },
 
   {
     code: "FINAL_SALE",
     evaluate: (f) =>
-      f.order?.isFinalSale
+      f.order && isWhollyFinalSale(f.order)
         ? deny(
             "FINAL_SALE",
-            "This order contains final sale items, which are not eligible for refund.",
+            CLAUSE.finalSale,
+            "Every item in this order is final sale, which is not eligible for a refund.",
           )
         : null,
   },
@@ -194,6 +274,7 @@ const RULES: Rule[] = [
       if (age <= POLICY_THRESHOLDS.refundWindowDays) return null;
       return deny(
         "OUTSIDE_REFUND_WINDOW",
+        CLAUSE.window,
         `This order was purchased ${age} days ago, outside our ${POLICY_THRESHOLDS.refundWindowDays}-day refund window.`,
       );
     },
@@ -209,9 +290,38 @@ const RULES: Rule[] = [
       if (f.order.status === "DELIVERED") return null;
       return deny(
         "ORDER_NOT_DELIVERED",
-        `This order is still ${f.order.status.toLowerCase()}, so a delivery-related refund cannot be processed yet.`,
+        CLAUSE.cannotRefund,
+        `This order is still ${f.order.status.toLowerCase()}, so a delivery-related refund cannot be processed yet. Please contact us again after it arrives.`,
       );
     },
+  },
+
+  {
+    code: "CHANGE_OF_MIND_NOT_ELIGIBLE",
+    evaluate: (f) =>
+      f.reason === "changed_mind"
+        ? deny(
+            "CHANGE_OF_MIND_NOT_ELIGIBLE",
+            CLAUSE.changeOfMind,
+            "Change of mind returns are not eligible for a refund under our policy.",
+          )
+        : null,
+  },
+
+  /* ---- Escalations: a human decides ------------------------------------- */
+
+  // Below every denial, above every approval: manipulation can at most force a
+  // human decision, and never reopens a request the policy has already closed.
+  {
+    code: "INJECTION_SUSPECTED",
+    evaluate: (f) =>
+      f.injection.detected
+        ? escalate(
+            "INJECTION_SUSPECTED",
+            CLAUSE.suspicious,
+            "Your request was flagged for manual review by a support agent.",
+          )
+        : null,
   },
 
   {
@@ -220,7 +330,8 @@ const RULES: Rule[] = [
       f.hasOpenRequest
         ? escalate(
             "CONFLICTING_DUPLICATE_REQUEST",
-            "You already have an open request for this order. A support agent will review it to avoid duplicate refunds.",
+            CLAUSE.duplicate,
+            "You already have an open request for this order, so a support agent will review this one to avoid a duplicate refund.",
           )
         : null,
   },
@@ -229,17 +340,34 @@ const RULES: Rule[] = [
     code: "AMOUNT_OVER_AUTO_APPROVAL_LIMIT",
     evaluate: (f) => {
       if (!f.order) return null;
-      // Only reasons that would be approved pay out; change of mind and "other"
-      // fall through to their own denial rather than being escalated for price.
+      // Only reasons that would be approved pay out. "other" is escalated by its
+      // own rule below; change of mind has already been denied.
       const wouldPay = f.reason === "damaged" || f.reason === "incorrect_item";
       if (!wouldPay) return null;
       if (f.order.totalAmountCents <= POLICY_THRESHOLDS.autoApprovalLimitCents) return null;
       return escalate(
         "AMOUNT_OVER_AUTO_APPROVAL_LIMIT",
-        `This order's total (${usd(f.order.totalAmountCents)}) is above our automatic approval limit of ${usd(POLICY_THRESHOLDS.autoApprovalLimitCents)}, so a support agent will review it.`,
+        CLAUSE.limit,
+        `This order's total (${usd(f.order.totalAmountCents)}) is above our automatic approval limit of ${usd(POLICY_THRESHOLDS.autoApprovalLimitCents)}, so your request has been sent for review.`,
       );
     },
   },
+
+  // §3.1 refunds the damaged order line. With more than one line the engine
+  // cannot know which one, so an agent picks it rather than guessing.
+  {
+    code: "DAMAGED_ITEM_NEEDS_REVIEW",
+    evaluate: (f) =>
+      f.reason === "damaged" && f.order && f.order.items.length > 1
+        ? escalate(
+            "DAMAGED_ITEM_NEEDS_REVIEW",
+            CLAUSE.damaged,
+            "Your order contains more than one item, so a support agent will confirm which item arrived damaged and refund it.",
+          )
+        : null,
+  },
+
+  /* ---- Approvals --------------------------------------------------------- */
 
   {
     code: "ELIGIBLE_DAMAGED",
@@ -247,7 +375,8 @@ const RULES: Rule[] = [
       f.reason === "damaged" && f.order
         ? approve(
             "ELIGIBLE_DAMAGED",
-            f.order.totalAmountCents,
+            CLAUSE.damaged,
+            returnableCents(f.order),
             "Your order arrived damaged, which is covered by our refund policy.",
           )
         : null,
@@ -259,19 +388,23 @@ const RULES: Rule[] = [
       f.reason === "incorrect_item" && f.order
         ? approve(
             "ELIGIBLE_INCORRECT_ITEM",
-            f.order.totalAmountCents,
+            CLAUSE.incorrect,
+            returnableCents(f.order),
             "You received an item that was not what you ordered, which is covered by our refund policy.",
           )
         : null,
   },
 
+  /* ---- Unclassified: a human decides ------------------------------------ */
+
   {
-    code: "CHANGE_OF_MIND_NOT_ELIGIBLE",
+    code: "OTHER_REASON_NEEDS_REVIEW",
     evaluate: (f) =>
-      f.reason === "changed_mind"
-        ? deny(
-            "CHANGE_OF_MIND_NOT_ELIGIBLE",
-            "Change of mind returns are not eligible for a refund under our policy.",
+      f.reason === "other"
+        ? escalate(
+            "OTHER_REASON_NEEDS_REVIEW",
+            CLAUSE.other,
+            "Your reason isn't one we can decide automatically, so a support agent will review your request.",
           )
         : null,
   },
@@ -290,13 +423,14 @@ export function evaluateRefundPolicy(facts: PolicyFacts): PolicyOutcome {
     if (outcome) return outcome;
   }
 
-  // Unclassified requests are never auto-approved. A reason of "other" with no
-  // supporting evidence is exactly the case a human should see.
+  // Unreachable while every RefundReason has a rule above, but the ladder stays
+  // closed: anything unmatched is refused, never waved through.
   return {
     decision: "DENIED",
     rules: ["DEFAULT_DENY"],
     requiresHumanReview: false,
     approvedAmountCents: null,
+    clause: CLAUSE.other,
     summary: "We could not match your request to an eligible refund reason under our policy.",
   };
 }
@@ -306,6 +440,7 @@ export function evaluateRefundPolicy(facts: PolicyFacts): PolicyOutcome {
  * Runs the injection scan, which must happen before any approval rule.
  */
 export function buildFacts(params: {
+  orderNumberProvided: boolean;
   order: PolicyOrderSnapshot | null;
   reason: RefundReason;
   hasOpenRequest: boolean;
@@ -313,6 +448,7 @@ export function buildFacts(params: {
   now?: Date;
 }): PolicyFacts {
   return {
+    orderNumberProvided: params.orderNumberProvided,
     order: params.order,
     reason: params.reason,
     hasOpenRequest: params.hasOpenRequest,

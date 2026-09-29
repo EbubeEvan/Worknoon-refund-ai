@@ -62,6 +62,7 @@ export async function createRefundRequestHandler(req: Request, res: Response): P
     rules: result.outcome.rules,
     requiresHumanReview: result.outcome.requiresHumanReview,
     approvedAmountCents: result.outcome.approvedAmountCents,
+    clause: result.outcome.clause,
     summary: result.outcome.summary,
     // The customer-facing reply. `response.source` lets the UI show whether this
     // was model-written or the deterministic fallback.

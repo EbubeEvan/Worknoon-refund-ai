@@ -276,6 +276,23 @@ async function main() {
       expectRule: "ELIGIBLE_DAMAGED",
       label: "typed amount is ignored",
     },
+    {
+      // Policy §3.1 refunds the damaged line; with two lines an agent picks it.
+      // Resolved in the admin block below.
+      email: "samuel@worknoon.test",
+      message: "The floor lamp in order ORD-1019 arrived with a cracked base.",
+      expectDecision: "ESCALATED",
+      expectRule: "DAMAGED_ITEM_NEEDS_REVIEW",
+      label: "damage on a multi-item order goes to an agent",
+    },
+    {
+      // Policy §9: no order number means the request is returned for clarification.
+      email: "hana@worknoon.test",
+      message: "My travel mug arrived broken, please refund it.",
+      expectDecision: "DENIED",
+      expectRule: "ORDER_NUMBER_MISSING",
+      label: "no order number asks for one",
+    },
   ];
 
   const sessions = new Map<string, Session>();
@@ -368,6 +385,24 @@ async function main() {
       "CONFLICTING_DUPLICATE_REQUEST",
       dup.body.rules?.[0] ?? "none",
     );
+  }
+
+  /* ---- mixed final-sale order (policy §2) ------------------------------- */
+  {
+    // ORD-1018 is a $60 planter plus a $40 final-sale vase. Only the returnable
+    // line is refunded.
+    const s = await sessionFor("samuel@worknoon.test");
+    const { body } = await submitRefund(
+      s,
+      "Order ORD-1018 came with the wrong planter, it is not the one I ordered.",
+    );
+    check(
+      "mixed final-sale order is approved",
+      "APPROVED",
+      body.decision,
+      `rules=${JSON.stringify(body.rules)}`,
+    );
+    check("  └ refunds only the returnable line", "$60.00", usd(body.approvedAmountCents));
   }
 
   /* ---- AI transparency ------------------------------------------------- */
@@ -471,6 +506,34 @@ async function main() {
           body: JSON.stringify({ resolve: "APPROVE" }),
         });
         check("a resolved escalation cannot be approved twice", "409", String(again.status));
+      }
+    }
+
+    /* ---- an agent picking the damaged line (policy §3.1) ---------------- */
+    {
+      const target = (escBody.requests ?? []).find(
+        (r: { orderNumber?: string }) => r.orderNumber === "ORD-1019",
+      );
+
+      if (!target) {
+        observe("line-picking resolution", "skipped: ORD-1019 not in queue");
+      } else {
+        const resolveWith = (body: Record<string, unknown>) =>
+          admin.fetch(`/api/admin/escalations/${target.id}/resolve`, {
+            method: "POST",
+            body: JSON.stringify({ resolve: "APPROVE", ...body }),
+          });
+
+        const noLines = await resolveWith({});
+        check("multi-item damage cannot be approved without a line", "400", String(noLines.status));
+
+        const badLine = await resolveWith({ lines: [5] });
+        check("approving a line the order does not have is refused", "400", String(badLine.status));
+
+        const res = await resolveWith({ lines: [0], note: "Lamp base cracked; shade fine." });
+        const body = asJson(await res.json());
+        check("approving the damaged line succeeds", "200", String(res.status));
+        check("  └ refunds only that line", "$120.00", usd(body.approvedAmountCents));
       }
     }
 

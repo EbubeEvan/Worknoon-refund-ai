@@ -10,17 +10,44 @@ import type { RefundRequest } from "@/lib/api.js";
 import { cn } from "@/lib/cn.js";
 import { humanRule, shortDate, usd } from "@/lib/format.js";
 
+/* -------------------------------------------------------------------------- */
+/* Line selection. The server enforces the same rules; these only shape the UI. */
+/* -------------------------------------------------------------------------- */
+
+/** Policy §3.1: on a multi-item damage claim the agent must name the damaged line. */
+function needsLinePick(r: RefundRequest): boolean {
+  return r.decisionReasons.includes("DAMAGED_ITEM_NEEDS_REVIEW");
+}
+
+/** Every returnable line, or none when the agent has to choose (§3.1). */
+export function defaultLines(r: RefundRequest): number[] {
+  if (needsLinePick(r)) return [];
+  return r.items.flatMap((item, i) => (item.finalSale ? [] : [i]));
+}
+
+/** What an approval of these lines pays, in cents. */
+export function linesAmountCents(r: RefundRequest, lines: number[]): number {
+  return lines.reduce((sum, i) => {
+    const item = r.items[i];
+    return item ? sum + item.unitAmountCents * item.quantity : sum;
+  }, 0);
+}
+
 /** Requests the engine would not decide on its own, waiting for an agent. */
 export function EscalationQueue({
   escalations,
   notes,
   onNoteChange,
+  lines,
+  onLinesChange,
   pending,
   onResolve,
 }: Readonly<{
   escalations: RefundRequest[];
   notes: Record<string, string>;
   onNoteChange: (id: string, note: string) => void;
+  lines: Record<string, number[]>;
+  onLinesChange: (id: string, lines: number[]) => void;
   pending: boolean;
   onResolve: (id: string, decision: ResolveDecision) => void;
 }>) {
@@ -45,6 +72,8 @@ export function EscalationQueue({
               request={r}
               note={notes[r.id] ?? ""}
               onNoteChange={(value) => onNoteChange(r.id, value)}
+              lines={lines[r.id] ?? defaultLines(r)}
+              onLinesChange={(value) => onLinesChange(r.id, value)}
               pending={pending}
               onResolve={(decision) => onResolve(r.id, decision)}
             />
@@ -59,16 +88,27 @@ function EscalationItem({
   request: r,
   note,
   onNoteChange,
+  lines,
+  onLinesChange,
   pending,
   onResolve,
 }: Readonly<{
   request: RefundRequest;
   note: string;
   onNoteChange: (note: string) => void;
+  lines: number[];
+  onLinesChange: (lines: number[]) => void;
   pending: boolean;
   onResolve: (decision: ResolveDecision) => void;
 }>) {
   const isOpen = r.status === "SUBMITTED";
+  const multiLine = r.items.length > 1;
+
+  function toggleLine(i: number) {
+    onLinesChange(
+      lines.includes(i) ? lines.filter((x) => x !== i) : [...lines, i].sort((a, b) => a - b),
+    );
+  }
 
   return (
     <li
@@ -118,6 +158,42 @@ function EscalationItem({
         </div>
       </div>
 
+      {isOpen && multiLine ? (
+        <fieldset className="mt-4 border-t border-border/60 pt-4">
+          <legend className="text-[12px] font-medium text-foreground">
+            {needsLinePick(r) ? "Which item arrived damaged?" : "Lines to refund"}
+          </legend>
+          <ul className="mt-2 space-y-1.5">
+            {r.items.map((item, i) => (
+              <li key={`${item.sku}-${i}`}>
+                <label
+                  className={cn(
+                    "flex items-center gap-2.5 text-[13px]",
+                    item.finalSale ? "text-subtle" : "cursor-pointer text-foreground",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={lines.includes(i)}
+                    disabled={item.finalSale || pending}
+                    onChange={() => toggleLine(i)}
+                  />
+                  <span className="min-w-0 flex-1">
+                    {item.name}
+                    {item.quantity > 1 ? ` × ${item.quantity}` : ""}
+                    {item.finalSale ? " · final sale, not refundable" : ""}
+                  </span>
+                  <span className="nums text-muted">
+                    {usd(item.unitAmountCents * item.quantity)}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+      ) : null}
+
       {isOpen ? (
         <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-border/60 pt-4">
           <div className="min-w-[200px] flex-1">
@@ -129,7 +205,11 @@ function EscalationItem({
               placeholder="Why you decided this way"
             />
           </div>
-          <Button size="md" onClick={() => onResolve("APPROVE")} disabled={pending}>
+          <Button
+            size="md"
+            onClick={() => onResolve("APPROVE")}
+            disabled={pending || (multiLine && lines.length === 0)}
+          >
             Approve
           </Button>
           <Button size="md" variant="danger" onClick={() => onResolve("DENY")} disabled={pending}>

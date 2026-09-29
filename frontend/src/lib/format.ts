@@ -36,7 +36,12 @@ export function dateTime(iso: string | Date): string {
  * Unknown codes fall back to Title Case so nothing ever renders as SNAKE_CASE.
  */
 const FRIENDLY_RULES: Record<string, string> = {
+  ORDER_NUMBER_MISSING: "No order number given",
   ORDER_NOT_FOUND: "Order not found",
+  DAMAGED_ITEM_NEEDS_REVIEW: "Damaged item, line to confirm",
+  OTHER_REASON_NEEDS_REVIEW: "Needs an agent's review",
+  ADMIN_APPROVE: "Approved by an agent",
+  ADMIN_DENY: "Denied by an agent",
   INJECTION_SUSPECTED: "Flagged for review",
   ORDER_CANCELLED: "Order was cancelled",
   ALREADY_REFUNDED: "Already refunded",

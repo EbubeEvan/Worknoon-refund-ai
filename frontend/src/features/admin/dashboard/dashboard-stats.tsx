@@ -47,8 +47,8 @@ export function DashboardStats({ refunds }: Readonly<{ refunds: DashboardData["r
           title={`${refunds.degradedCount} request(s) used the extraction fallback`}
         >
           The model call failed or returned unusable output for these requests. They still received
-          a deterministic decision, but the reason defaulted to &quot;other&quot;, so they were not
-          auto-approved.
+          a deterministic decision, but the reason defaulted to &quot;other&quot;, so they were sent
+          to an agent instead of being auto-approved (policy §3.4).
         </Alert>
       ) : null}
     </>

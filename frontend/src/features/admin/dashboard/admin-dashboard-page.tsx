@@ -11,7 +11,11 @@ import { PageHeader } from "@/components/ui/page-header.js";
 import { SkeletonRows } from "@/components/ui/skeleton.js";
 import { AdminNav } from "@/features/admin/admin-nav.js";
 import { DashboardStats } from "@/features/admin/dashboard/dashboard-stats.js";
-import { EscalationQueue } from "@/features/admin/dashboard/escalation-queue.js";
+import {
+  defaultLines,
+  EscalationQueue,
+  linesAmountCents,
+} from "@/features/admin/dashboard/escalation-queue.js";
 import { RecentRequests } from "@/features/admin/dashboard/recent-requests.js";
 import {
   ResolveConfirmDialog,
@@ -39,16 +43,20 @@ export function AdminDashboardPage() {
   });
 
   const [note, setNote] = useState<Record<string, string>>({});
+  const [lines, setLines] = useState<Record<string, number[]>>({});
   const [pendingResolve, setPendingResolve] = useState<{
     id: string;
     decision: ResolveDecision;
+    /** Only sent for multi-item orders; the server defaults to every returnable line. */
+    lines: number[] | undefined;
   } | null>(null);
 
   const resolve = useMutation({
-    mutationFn: (v: { id: string; decision: ResolveDecision }) =>
-      endpoints.resolveEscalation(v.id, v.decision, note[v.id] || undefined),
+    mutationFn: (v: { id: string; decision: ResolveDecision; lines: number[] | undefined }) =>
+      endpoints.resolveEscalation(v.id, v.decision, note[v.id] || undefined, v.lines),
     onSuccess: () => {
       setNote({});
+      setLines({});
       setPendingResolve(null);
       void queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
     },
@@ -58,6 +66,18 @@ export function AdminDashboardPage() {
 
   const d = dash.data;
   const openCount = d?.escalations.filter((r) => r.status === "SUBMITTED").length ?? 0;
+  const pendingRequest = d?.escalations.find((r) => r.id === pendingResolve?.id) ?? null;
+
+  function requestResolve(id: string, decision: ResolveDecision) {
+    const request = d?.escalations.find((r) => r.id === id);
+    const multiLine = (request?.items.length ?? 0) > 1;
+    const chosen = request ? (lines[id] ?? defaultLines(request)) : undefined;
+    setPendingResolve({
+      id,
+      decision,
+      lines: decision === "APPROVE" && multiLine ? chosen : undefined,
+    });
+  }
 
   return (
     <AppShell nav={<AdminNav active="dashboard" />}>
@@ -96,8 +116,10 @@ export function AdminDashboardPage() {
                 escalations={d.escalations}
                 notes={note}
                 onNoteChange={(id, value) => setNote((n) => ({ ...n, [id]: value }))}
+                lines={lines}
+                onLinesChange={(id, value) => setLines((l) => ({ ...l, [id]: value }))}
                 pending={resolve.isPending}
-                onResolve={(id, decision) => setPendingResolve({ id, decision })}
+                onResolve={requestResolve}
               />
 
               <RecentRequests requests={d.recent} totalEvents={d.audit.totalEvents} />
@@ -107,8 +129,13 @@ export function AdminDashboardPage() {
       </div>
 
       <ResolveConfirmDialog
-        request={d?.escalations.find((r) => r.id === pendingResolve?.id) ?? null}
+        request={pendingRequest}
         decision={pendingResolve?.decision ?? null}
+        amountCents={
+          pendingRequest && pendingResolve?.decision === "APPROVE"
+            ? linesAmountCents(pendingRequest, pendingResolve.lines ?? defaultLines(pendingRequest))
+            : null
+        }
         note={pendingResolve ? (note[pendingResolve.id] ?? "") : ""}
         open={pendingResolve !== null}
         pending={resolve.isPending}

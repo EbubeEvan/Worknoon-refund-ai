@@ -95,8 +95,8 @@ export function normaliseOrderNumber(raw: string | null | undefined): string | n
  * cannot be trusted.
  *
  * It extracts only what can be read deterministically (an order number via
- * regex) and leaves `reason` as "other", which routes to a human instead of
- * guessing. A degraded extraction can cost a support ticket; a confidently
+ * regex) and leaves `reason` as "other", which the engine escalates to a human
+ * (policy §3.4) instead of guessing. A degraded extraction can cost a support ticket; a confidently
  * wrong one can cost real money.
  */
 function fallbackExtraction(
@@ -214,6 +214,7 @@ export function toPolicyFacts(params: {
   now?: Date;
 }) {
   return buildFacts({
+    orderNumberProvided: params.extraction.orderNumber !== null,
     order: params.order,
     reason: params.extraction.reason,
     hasOpenRequest: params.hasOpenRequest,

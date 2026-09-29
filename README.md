@@ -37,7 +37,11 @@ customer message
 ```
 
 If Gemini is unavailable, a regex extractor and the engine's own summary take
-over. The decision is identical either way, which is the point.
+over. The engine still makes every decision; a request the regex cannot classify
+goes to a support agent rather than being guessed at, and is never approved.
+
+The reasoning behind these choices, the full rule ladder, and the trade-offs are
+in [docs/architecture.md](docs/architecture.md).
 
 ## Quick start
 
@@ -66,7 +70,7 @@ in for you.
 | `marcus@worknoon.test` | CUSTOMER | final sale, denied                |
 | `admin@worknoon.test`  | ADMIN    | escalation queue, audit           |
 
-The seed creates 15 customers and 17 orders, each shaped to trigger a different
+The seed creates 15 customers and 19 orders, each shaped to trigger a different
 policy outcome.
 
 ## Commands
@@ -80,8 +84,8 @@ npm run lint:fix      # eslint --fix
 npm run format        # prettier --write
 npm run format:check  # prettier --check
 npm run typecheck     # tsc: backend/src, backend/scripts, frontend
-npm test              # 53 unit tests (policy engine + AI seam)
-npm run e2e           # 48-check live end-to-end suite
+npm test              # 63 unit tests (policy engine + AI seam)
+npm run e2e           # 58-check live end-to-end suite
 npm run reset:demo    # wipe orders/requests and re-seed
 npm run build         # compile both packages
 npm run verify        # lint + format:check + typecheck + test + build
@@ -150,6 +154,7 @@ backend/    Express + Drizzle + PostgreSQL
   src/modules/    auth, customers, orders, refunds, admin, audit
   seed/           the written refund policy (spec only; not read at runtime)
   scripts/        seed, reset, e2e suite
+docs/       architecture notes (design decisions and trade-offs)
 frontend/   React + Vite + TanStack Router/Query
   src/lib/        typed API client, auth context, formatting
   src/routes/     file-based routes (createFileRoute only; tree is generated)
@@ -175,8 +180,10 @@ Money is stored as integer cents everywhere. No floats touch an amount.
 | `audit_logs`      | append-only; no update or delete path exists                      |
 
 `approved_amount_cents` is deliberately distinct from what the customer asked
-for, because they often differ — a damaged-item refund settles at the full value
-of the order line regardless of the figure in the message.
+for, because they often differ — a refund settles from the order's lines (the
+damaged line, or the order total less any final-sale lines) regardless of the
+figure in the message. The requested amount is recorded only; the engine never
+reads it.
 
 ## Security
 
@@ -186,22 +193,28 @@ of the order line regardless of the figure in the message.
   `ORDER_NOT_FOUND`, which reveals nothing.
 - **The browser guard is UX only.** All authorization is enforced server-side, so
   bypassing the client guard exposes nothing a signed-in user could not fetch.
-- **Prompt injection is screened before the model sees the text**, and the facts
-  are re-screened before the policy engine runs.
+- **Prompt injection is screened before the model sees the text**, and the scan
+  is re-run on the raw message when the engine's facts are built, so model
+  output cannot clear the flag.
 - **Approvals are atomic.** The order row is locked `FOR UPDATE` and re-checked
   inside the transaction, so two concurrent approvals cannot both succeed; the
   loser is downgraded to `ALREADY_REFUNDED`. Resolving an escalation twice
   returns `409`.
+- **Denials are final.** Every denial is checked before any escalation, so an
+  agent can never be handed a request the policy forbids (window, final sale).
+  Manual approvals are bounded the same way: final-sale lines are refused.
 - **The policy engine is closed.** A default-deny rule terminates the ladder, so an
-  unrecognized request is denied rather than waved through.
+  unmatched request is refused rather than waved through.
 - Secrets live in `.env.local` (gitignored) and never reach the browser bundle.
 
 ## Known limits
 
 - **Gemini free tier is 15 requests/minute** and a refund costs two calls. Under
-  load the system falls back to regex extraction, which cannot always read an
-  amount out of free text. The E2E suite paces submissions to stay under the cap;
-  a production deployment needs a paid tier or a queue.
+  load the system falls back to regex extraction, which reads the order number
+  but not the reason, so those requests go to an agent instead of being
+  auto-approved. The E2E
+  suite paces submissions to stay under the cap; a production deployment needs a
+  paid tier or a queue.
 - Audit logs are append-only in application code only — there is no database
   trigger preventing a direct `UPDATE`.
 - The frontend session is read once on load; there is no token refresh, so a

@@ -85,6 +85,10 @@ export function DecisionResult({
             <p className="text-[13px] leading-relaxed text-foreground">{result.reply.text}</p>
           </div>
 
+          <p className="text-[12px] text-subtle">
+            Refund policy <span className="font-medium text-muted">{result.clause}</span>
+          </p>
+
           <div className="flex flex-wrap gap-1.5">
             {result.rules.map((code) => (
               <Badge key={code} tone="neutral">

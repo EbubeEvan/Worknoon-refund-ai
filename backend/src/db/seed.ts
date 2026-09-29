@@ -158,7 +158,7 @@ const SEED_CUSTOMERS: SeedCustomer[] = [
   {
     email: "samuel@worknoon.test",
     name: "Samuel Adeyemi",
-    lifetimeValueCents: 26_000,
+    lifetimeValueCents: 56_000,
     orders: [
       {
         orderNumber: "ORD-1009",
@@ -166,6 +166,23 @@ const SEED_CUSTOMERS: SeedCustomer[] = [
         purchasedDaysAgo: 15,
         items: [item("SKU-NBK-01", "Notebook A5", 2_600, 10)],
         scenario: "Normal eligible request - damaged, in window, under limit",
+      },
+      {
+        orderNumber: "ORD-1018",
+        totalAmountCents: 10_000,
+        purchasedDaysAgo: 5,
+        items: [
+          item("SKU-PLN-02", "Ceramic Planter", 6_000),
+          item("SKU-CLR-09", "Clearance Vase", 4_000, 1, true),
+        ],
+        scenario: "ELIGIBLE_INCORRECT_ITEM on a mixed order - refunds the $60 returnable line only",
+      },
+      {
+        orderNumber: "ORD-1019",
+        totalAmountCents: 20_000,
+        purchasedDaysAgo: 7,
+        items: [item("SKU-LMP-12", "Floor Lamp", 12_000), item("SKU-SHD-03", "Lamp Shade", 8_000)],
+        scenario: "DAMAGED_ITEM_NEEDS_REVIEW - two lines, an agent picks the damaged one",
       },
     ],
   },

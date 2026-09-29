@@ -34,6 +34,8 @@ export async function listEscalationsHandler(req: Request, res: Response): Promi
 const resolveSchema = z.object({
   resolve: z.enum(["APPROVE", "DENY"]),
   note: z.string().max(2_000).optional(),
+  /** Indices into the order's items to refund. Omit to refund every returnable line. */
+  lines: z.array(z.number().int().min(0)).min(1).optional(),
 });
 
 export async function resolveEscalationHandler(req: Request, res: Response): Promise<void> {
@@ -48,6 +50,7 @@ export async function resolveEscalationHandler(req: Request, res: Response): Pro
     resolve: parsed.data.resolve,
     adminUserId: req.principal!.userId,
     note: parsed.data.note ?? null,
+    lines: parsed.data.lines,
   });
 
   await recordAuditEvent({

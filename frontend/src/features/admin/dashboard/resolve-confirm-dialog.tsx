@@ -7,6 +7,7 @@ export type ResolveDecision = "APPROVE" | "DENY";
 export function ResolveConfirmDialog({
   request,
   decision,
+  amountCents,
   note,
   open,
   pending,
@@ -15,6 +16,8 @@ export function ResolveConfirmDialog({
 }: {
   request: RefundRequest | null;
   decision: ResolveDecision | null;
+  /** What an approval will pay, computed from the chosen lines. */
+  amountCents: number | null;
   note: string;
   open: boolean;
   pending: boolean;
@@ -37,8 +40,8 @@ export function ResolveConfirmDialog({
         request ? (
           <>
             <span className="font-medium text-foreground">{request.orderNumber}</span>
-            {request.approvedAmountCents ? (
-              <span className="nums"> · {usd(request.approvedAmountCents)}</span>
+            {approving && amountCents !== null ? (
+              <span className="nums"> · refunds {usd(amountCents)}</span>
             ) : null}
             <br />
             <span>{request.decisionReasons.map(humanRule).join(" / ")}</span>

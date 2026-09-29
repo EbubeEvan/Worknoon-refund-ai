@@ -46,6 +46,7 @@ function toSnapshot(order: OrderRecord): PolicyOrderSnapshot {
     purchasedAt: order.purchasedAt,
     refundStatus: order.refundStatus,
     status: order.status,
+    items: order.items,
   };
 }
 
@@ -138,7 +139,9 @@ export async function evaluateRefundRequest(input: EvaluateRefundInput): Promise
         rules: record.decisionReasons,
         approvedAmountCents: null,
         requiresHumanReview: false,
-        summary: "A refund has already been issued for this order.",
+        clause: "§6 Orders that cannot be refunded",
+        summary:
+          "A refund has already been issued for this order. (Refund policy §6 Orders that cannot be refunded.)",
       };
     }
   }

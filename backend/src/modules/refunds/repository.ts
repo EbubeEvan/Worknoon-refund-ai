@@ -3,8 +3,14 @@ import { and, count, eq, sql } from "drizzle-orm";
 import { db } from "../../db/client.js";
 import { queryRows } from "../../db/execute.js";
 import { type OrderItem, orders, refundRequests } from "../../db/schema/index.js";
-import type { Decision, PolicyRuleCode, RefundReason } from "../../domain/refund-policy.service.js";
-import { conflict, notFound } from "../../lib/errors.js";
+import {
+  type Decision,
+  lineCents,
+  type PolicyRuleCode,
+  type RefundReason,
+  returnableCents,
+} from "../../domain/refund-policy.service.js";
+import { badRequest, conflict, notFound } from "../../lib/errors.js";
 import { newRefundId } from "../../lib/ids.js";
 import type { ExtractedRefundIntent } from "./types.js";
 
@@ -218,16 +224,50 @@ export async function listEscalatedRequests(
 }
 
 /**
+ * The amount an agent's approval pays. Throws 400 when the chosen lines break
+ * the policy: a final-sale line (§2), a line that does not exist, or no lines
+ * at all on a multi-item damage claim (§3.1).
+ */
+function agentApprovalCents(
+  order: { totalAmountCents: number; items: OrderItem[] },
+  decisionReasons: string[],
+  lines: number[] | undefined,
+): number {
+  if (lines === undefined) {
+    if (decisionReasons.includes("DAMAGED_ITEM_NEEDS_REVIEW")) {
+      throw badRequest("Choose which order line(s) arrived damaged before approving");
+    }
+    return returnableCents(order);
+  }
+
+  const chosen = [...new Set(lines)];
+  let total = 0;
+  for (const i of chosen) {
+    const line = order.items[i];
+    if (!line) throw badRequest(`Order has no line ${i}`);
+    if (line.finalSale) throw badRequest(`Line ${i} is final sale and cannot be refunded`);
+    total += lineCents(line);
+  }
+  return total;
+}
+
+/**
  * Apply a human decision to an escalated request.
  *
  * The order's refund_status is moved in the same transaction as the request
  * status, so an approval can never be recorded without the order reflecting it.
+ *
+ * An agent's discretion is bounded by the policy: `lines` (indices into the
+ * order's items) may never include a final-sale line (§2), and a multi-item
+ * damage claim must name the damaged line(s) (§3.1). Without `lines`, an
+ * approval pays exactly what the engine would have: the returnable value.
  */
 export async function resolveEscalation(params: {
   requestId: string;
   resolve: "APPROVE" | "DENY";
   adminUserId: string;
   note: string | null;
+  lines?: number[];
 }): Promise<{ approvedAmountCents: number | null }> {
   return db.transaction(async (tx) => {
     const [request] = await tx
@@ -242,17 +282,24 @@ export async function resolveEscalation(params: {
       throw conflict("refund request is already resolved");
     }
 
-    // An agent's approval must produce the same amount the engine would have
-    // produced, or manual review would quietly diverge from policy. Damaged and
-    // incorrect-item refunds are issued for the full value of the order line, so
-    // the order total is the amount, not whatever the customer happened to ask
-    // for. See seed/policies/refund-policy.md section 3.
+    // An agent's approval must stay inside the policy, or manual review would
+    // quietly diverge from it. The amount always comes from the order's lines,
+    // never from whatever the customer happened to ask for.
     const [orderRow] = await tx
-      .select({ totalAmountCents: orders.totalAmountCents })
+      .select({ totalAmountCents: orders.totalAmountCents, items: orders.items })
       .from(orders)
       .where(eq(orders.id, request.orderId))
       .limit(1);
-    const approved = params.resolve === "APPROVE" ? (orderRow?.totalAmountCents ?? null) : null;
+    if (!orderRow) throw notFound("order not found for refund request");
+
+    const approved =
+      params.resolve === "APPROVE"
+        ? agentApprovalCents(
+            { totalAmountCents: orderRow.totalAmountCents, items: orderRow.items ?? [] },
+            (request.decisionReasons ?? []) as string[],
+            params.lines,
+          )
+        : null;
 
     await tx
       .update(refundRequests)
