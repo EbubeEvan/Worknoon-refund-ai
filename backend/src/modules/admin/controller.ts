@@ -1,14 +1,15 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+
 import { badRequest, notFound } from "../../lib/errors.js";
-import { recordAuditEvent, listAuditEvents, summariseAudit } from "../audit/repository.js";
+import { listAuditEvents, recordAuditEvent, summariseAudit } from "../audit/repository.js";
 import { findCustomerById, listCustomersWithStats } from "../customers/repository.js";
 import { listOrdersForCustomer, listOrdersWithCustomer } from "../orders/repository.js";
 import {
   listEscalatedRequests,
   listRecentRequests,
-  resolveEscalation,
   listRefundRequestsForCustomer,
+  resolveEscalation,
 } from "../refunds/repository.js";
 import { summariseRefunds } from "../refunds/repository.js";
 

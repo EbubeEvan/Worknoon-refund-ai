@@ -1,10 +1,11 @@
 import { and, count, eq, sql } from "drizzle-orm";
+
 import { db } from "../../db/client.js";
 import { queryRows } from "../../db/execute.js";
-import { orders, refundRequests, type OrderItem } from "../../db/schema/index.js";
+import { type OrderItem, orders, refundRequests } from "../../db/schema/index.js";
+import type { Decision, PolicyRuleCode, RefundReason } from "../../domain/refund-policy.service.js";
 import { conflict, notFound } from "../../lib/errors.js";
 import { newRefundId } from "../../lib/ids.js";
-import type { Decision, PolicyRuleCode, RefundReason } from "../../domain/refund-policy.service.js";
 import type { ExtractedRefundIntent, RetrievedContext } from "./types.js";
 
 /**

@@ -3,16 +3,17 @@ import cors from "cors";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+
 import { env } from "./config/env.js";
-import { auth } from "./modules/auth/auth.js";
-import { errorHandler, notFoundHandler } from "./middleware/error.js";
-import { createLogger } from "./lib/logger.js";
 import { runMigrations } from "./db/migrate.js";
-import { ordersRouter } from "./modules/orders/routes.js";
-import { customersRouter } from "./modules/customers/routes.js";
-import { refundsRouter } from "./modules/refunds/routes.js";
-import { policiesRouter } from "./modules/policies/routes.js";
+import { createLogger } from "./lib/logger.js";
+import { errorHandler, notFoundHandler } from "./middleware/error.js";
 import { adminRouter } from "./modules/admin/routes.js";
+import { auth } from "./modules/auth/auth.js";
+import { customersRouter } from "./modules/customers/routes.js";
+import { ordersRouter } from "./modules/orders/routes.js";
+import { policiesRouter } from "./modules/policies/routes.js";
+import { refundsRouter } from "./modules/refunds/routes.js";
 
 const log = createLogger("server");
 

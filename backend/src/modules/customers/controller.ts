@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+
 import { badRequest, notFound } from "../../lib/errors.js";
 import { requireCustomer } from "../../middleware/auth.js";
-import { findCustomerById } from "./repository.js";
 import { listOrdersForCustomer } from "../orders/repository.js";
 import { listRefundRequestsForCustomer } from "../refunds/repository.js";
+import { findCustomerById } from "./repository.js";
 
 /** Customer-facing handlers. All scoped to the session's customer id. */
 

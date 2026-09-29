@@ -1,10 +1,11 @@
 import { and, cosineDistance, eq, inArray } from "drizzle-orm";
-import { db } from "../db/client.js";
-import { policyChunks, policies } from "../db/schema/index.js";
+
 import { RETRIEVAL } from "../config/ai.js";
+import { db } from "../db/client.js";
+import { policies, policyChunks } from "../db/schema/index.js";
 import { createLogger } from "../lib/logger.js";
-import { embedQuery } from "./embeddings.js";
 import { getActivePolicyIds } from "../modules/policies/repository.js";
+import { embedQuery } from "./embeddings.js";
 
 const log = createLogger("retrieval");
 

@@ -1,12 +1,14 @@
 import { createRoute, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { rootRoute, FullPageSpinner } from "./root.js";
+
 import { useAuth } from "@/lib/auth.js";
-import { LoginPage } from "@/pages/login.js";
-import { CustomerPage } from "@/pages/customer.js";
+import { AdminAuditPage } from "@/pages/admin-audit.js";
 import { AdminDashboardPage } from "@/pages/admin-dashboard.js";
 import { AdminPoliciesPage } from "@/pages/admin-policies.js";
-import { AdminAuditPage } from "@/pages/admin-audit.js";
+import { CustomerPage } from "@/pages/customer.js";
+import { LoginPage } from "@/pages/login.js";
+
+import { FullPageSpinner, rootRoute } from "./root.js";
 
 /**
  * Route definitions, written by hand.

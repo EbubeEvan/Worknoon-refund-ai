@@ -1,14 +1,16 @@
-import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+
 import { count, eq } from "drizzle-orm";
-import { db, pool } from "./client.js";
-import { customers, orders, policies, users, type OrderItem } from "./schema/index.js";
+
 import { newCustomerId, newOrderId, newPolicyId } from "../lib/ids.js";
 import { createLogger } from "../lib/logger.js";
 import { auth } from "../modules/auth/auth.js";
-import { indexPolicy } from "../rag/ingestion.js";
 import { insertPolicy } from "../modules/policies/repository.js";
+import { indexPolicy } from "../rag/ingestion.js";
+import { db, pool } from "./client.js";
+import { customers, type OrderItem, orders, policies, users } from "./schema/index.js";
 
 const log = createLogger("seed");
 

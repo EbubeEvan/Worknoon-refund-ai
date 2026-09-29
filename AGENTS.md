@@ -14,7 +14,7 @@ npm run build   # tsc for both packages, then vite
 
 Both must exit 0. A change that only "looks right" is not finished:
 
-- `npm run lint` catches unused imports, stray `any`, and broken React hook
+- `npm run lint` catches unused imports, unsorted imports, and broken React hook
   usage. The hook rules here are compiler-backed and have caught real bugs in
   this repo.
 - `npm run build` typechecks `backend/src`, `backend/scripts`, and
@@ -26,6 +26,12 @@ If you changed formatting or imports, also run:
 ```bash
 npm run format  # prettier --write; harmless on already-formatted files
 ```
+
+**Run Prettier after `eslint --fix`, never before.** Import sorting rewrites
+specifier lists and its own output is not Prettier-formatted; left alone it
+emits `import { createRouter,RouterProvider }`. The two tools are otherwise
+stable — the ordering settles after one pass and does not reshuffle. The
+`pre-commit` hook already runs them in the right order.
 
 ### Full gate
 

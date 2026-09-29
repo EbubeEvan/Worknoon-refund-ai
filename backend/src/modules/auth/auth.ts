@@ -1,6 +1,7 @@
-import { admin } from "better-auth/plugins";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { admin } from "better-auth/plugins";
+
 import { env } from "../../config/env.js";
 import { db } from "../../db/client.js";
 import { accounts, sessions, users, verifications } from "../../db/schema/index.js";

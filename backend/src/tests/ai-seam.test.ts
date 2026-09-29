@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
+
 import {
   normaliseOrderNumber,
   refundIntentSchema,
   refundIntentWireSchema,
   wireToIntent,
 } from "../ai/extraction.js";
-import { buildRetrievalQuery } from "../rag/retrieval.js";
 import { normalizeText } from "../rag/ingestion.js";
+import { buildRetrievalQuery } from "../rag/retrieval.js";
 
 /**
  * Tests for the AI seam: the pure functions that sit between the model and the

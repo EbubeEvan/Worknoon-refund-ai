@@ -1,8 +1,9 @@
 import { createRootRoute, Outlet, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useAuth } from "@/lib/auth.js";
-import type { SessionUser } from "@/lib/api.js";
+
 import { Spinner } from "@/components/ui.js";
+import type { SessionUser } from "@/lib/api.js";
+import { useAuth } from "@/lib/auth.js";
 
 /**
  * Root route: layout, 404, and the shared auth guard.

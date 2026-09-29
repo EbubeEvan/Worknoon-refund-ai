@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { buildFacts, type RefundReason } from "../domain/refund-policy.service.js";
+
 import { scanForInjection } from "../domain/prompt-injection.js";
+import { buildFacts, type RefundReason } from "../domain/refund-policy.service.js";
 import { createLogger } from "../lib/logger.js";
 import { getChatModel } from "./gemini.js";
 

@@ -103,6 +103,23 @@ ESLint owns correctness, Prettier owns formatting. `eslint.config.mjs` ends with
 `eslint-config-prettier`, which switches off every stylistic rule that would
 contradict the formatter — so add new rules _above_ that line, never below it.
 
+Import and export order is enforced by `eslint-plugin-simple-import-sort` across
+every `.ts` and `.tsx` file. It is far more reliable here than
+`import/order`, which needs a type-aware resolver to sort TypeScript correctly,
+and it autofixes both import and export declarations. The convention it produces:
+
+```
+side-effect imports, then node builtins, then packages, then relative
+```
+
+with a blank line between groups and specifiers sorted within each list.
+
+If you run `eslint --fix` yourself, follow it with `npm run format`. Sorting
+rewrites specifier lists and its output is not Prettier-formatted — on its own it
+produces `import { createRouter,RouterProvider }`. The two settle after one pass
+and do not then fight each other; `lint-staged` in the `pre-commit` hook already
+runs them in that order.
+
 `backend/seed/` is in `.prettierignore` on purpose: the policy markdown is chunked
 and embedded into the vector store, so reformatting it would silently change what
 the RAG pipeline ingests.

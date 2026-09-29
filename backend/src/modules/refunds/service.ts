@@ -5,8 +5,8 @@ import {
   type PolicyOrderSnapshot,
   type RefundReason,
 } from "../../domain/refund-policy.service.js";
-import { buildRetrievalQuery, retrievePolicyContext } from "../../rag/retrieval.js";
 import { createLogger } from "../../lib/logger.js";
+import { buildRetrievalQuery, retrievePolicyContext } from "../../rag/retrieval.js";
 import { recordAuditEvent } from "../audit/repository.js";
 import { findOrderForCustomer, type OrderRecord } from "../orders/repository.js";
 import { createRefundRequest, hasOpenRequestForOrder } from "./repository.js";

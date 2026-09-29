@@ -1,7 +1,8 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { useAuth } from "@/lib/auth.js";
+
 import { Badge, Button } from "@/components/ui.js";
+import { useAuth } from "@/lib/auth.js";
 
 /**
  * App chrome: header, identity, role-appropriate nav, sign out.

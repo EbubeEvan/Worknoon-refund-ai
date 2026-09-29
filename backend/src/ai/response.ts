@@ -1,7 +1,7 @@
-import { createLogger } from "../lib/logger.js";
-import { getChatModel } from "./gemini.js";
 import type { Decision, PolicyOutcome } from "../domain/refund-policy.service.js";
+import { createLogger } from "../lib/logger.js";
 import type { RetrievedChunk } from "../rag/retrieval.js";
+import { getChatModel } from "./gemini.js";
 
 const log = createLogger("response");
 

@@ -1,5 +1,5 @@
-import { buildRetrievalQuery, retrievePolicyContext } from "../src/rag/retrieval.js";
 import { pool } from "../src/db/client.js";
+import { buildRetrievalQuery, retrievePolicyContext } from "../src/rag/retrieval.js";
 
 /**
  * Manual smoke check for the RAG pipeline.

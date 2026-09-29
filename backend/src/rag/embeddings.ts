@@ -1,5 +1,5 @@
-import { createLogger } from "../lib/logger.js";
 import { getEmbeddingModel } from "../ai/gemini.js";
+import { createLogger } from "../lib/logger.js";
 
 const log = createLogger("embeddings");
 

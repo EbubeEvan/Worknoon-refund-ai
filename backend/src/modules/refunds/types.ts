@@ -1,7 +1,7 @@
 import type { ExtractionResult } from "../../ai/extraction.js";
 import type { GeneratedResponse } from "../../ai/response.js";
-import type { PolicyContext } from "../../rag/retrieval.js";
 import type { Decision, PolicyOutcome } from "../../domain/refund-policy.service.js";
+import type { PolicyContext } from "../../rag/retrieval.js";
 
 /**
  * Shared shapes for the refund flow.

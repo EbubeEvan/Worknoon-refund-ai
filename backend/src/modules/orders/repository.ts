@@ -1,7 +1,8 @@
 import { and, desc, eq, sql } from "drizzle-orm";
+
 import { db } from "../../db/client.js";
 import { queryRows } from "../../db/execute.js";
-import { orders, type OrderItem } from "../../db/schema/index.js";
+import { type OrderItem, orders } from "../../db/schema/index.js";
 import type { OrderStatus, RefundStatus } from "../../domain/refund-policy.service.js";
 
 /**

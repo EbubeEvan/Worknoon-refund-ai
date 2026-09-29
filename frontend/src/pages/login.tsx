@@ -1,8 +1,9 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { useAuth } from "@/lib/auth.js";
-import { ApiError } from "@/lib/api.js";
+
 import { Alert, Button, Card, CardBody, Input, Label, Spinner } from "@/components/ui.js";
+import { ApiError } from "@/lib/api.js";
+import { useAuth } from "@/lib/auth.js";
 
 /** Demo accounts, offered as one-click fills so the reviewer can try both roles. */
 const DEMO_ACCOUNTS = [

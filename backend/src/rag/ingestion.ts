@@ -1,13 +1,14 @@
 import { MarkdownTextSplitter } from "@langchain/textsplitters";
+
 import { CHUNKING } from "../config/ai.js";
+import { newId } from "../lib/ids.js";
 import { createLogger } from "../lib/logger.js";
-import { embedDocuments } from "./embeddings.js";
 import {
   deleteChunksForPolicy,
   getPolicyById,
   insertChunks,
 } from "../modules/policies/repository.js";
-import { newId } from "../lib/ids.js";
+import { embedDocuments } from "./embeddings.js";
 
 const log = createLogger("ingestion");
 

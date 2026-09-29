@@ -1,6 +1,10 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+
 import { badMedia, badRequest, notFound } from "../../lib/errors.js";
+import { newPolicyId } from "../../lib/ids.js";
+import { extractText, indexPolicy } from "../../rag/ingestion.js";
+import { recordAuditEvent } from "../audit/repository.js";
 import {
   deletePolicy,
   getPolicyById,
@@ -9,9 +13,6 @@ import {
   listPolicies,
   updatePolicy,
 } from "./repository.js";
-import { extractText, indexPolicy } from "../../rag/ingestion.js";
-import { recordAuditEvent } from "../audit/repository.js";
-import { newPolicyId } from "../../lib/ids.js";
 
 /**
  * Policy management controller (admin).

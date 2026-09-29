@@ -1,9 +1,10 @@
+import { eq } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
-import { forbidden, unauthenticated } from "../lib/errors.js";
-import { auth } from "../modules/auth/auth.js";
+
 import { db } from "../db/client.js";
 import { customers } from "../db/schema/index.js";
-import { eq } from "drizzle-orm";
+import { forbidden, unauthenticated } from "../lib/errors.js";
+import { auth } from "../modules/auth/auth.js";
 
 /**
  * The authenticated principal, derived exclusively from the session cookie.

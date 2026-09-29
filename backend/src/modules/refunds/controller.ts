@@ -1,11 +1,12 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+
 import { badRequest, notFound } from "../../lib/errors.js";
 import { requireCustomer } from "../../middleware/auth.js";
+import { recordAuditEvent } from "../audit/repository.js";
 import { listOrdersForCustomer } from "../orders/repository.js";
 import { listRefundRequestsForCustomer, summariseRefunds } from "./repository.js";
 import { evaluateRefundRequest } from "./service.js";
-import { recordAuditEvent } from "../audit/repository.js";
 import type { RetrievedContext } from "./types.js";
 
 /**
