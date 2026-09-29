@@ -14,6 +14,14 @@ export type ErrorAudience = "customer" | "admin";
 
 export function friendlyError(err: unknown, audience: ErrorAudience = "customer"): string {
   if (err instanceof ApiError) {
+    // Checked before `isAuth`: Better Auth rejects a wrong password with a 401
+    // too, and that is not an expired session.
+    if (err.code === "INVALID_EMAIL_OR_PASSWORD") {
+      return "Incorrect email or password. Please try again.";
+    }
+    if (err.status === 429) {
+      return "Too many tries in a short time. Please wait a moment and try again.";
+    }
     if (err.isAuth) {
       return "Your session has expired. Please sign in again.";
     }

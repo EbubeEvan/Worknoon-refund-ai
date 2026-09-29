@@ -57,11 +57,17 @@ async function request<T>(path: string, init: RequestInit & { json?: unknown } =
   const payload = text ? safeJson(text) : null;
 
   if (!res.ok) {
-    const err = payload as { error?: { code?: string; message?: string; details?: unknown } };
+    // Our controllers wrap errors as `{ error: {...} }`; Better Auth, mounted
+    // raw at /api/auth, answers with a flat `{ code, message }`.
+    const err = payload as {
+      error?: { code?: string; message?: string; details?: unknown };
+      code?: string;
+      message?: string;
+    } | null;
     throw new ApiError(
       res.status,
-      err?.error?.code ?? "UNKNOWN",
-      err?.error?.message ?? `Request failed with status ${res.status}`,
+      err?.error?.code ?? err?.code ?? "UNKNOWN",
+      err?.error?.message ?? err?.message ?? `Request failed with status ${res.status}`,
       err?.error?.details,
     );
   }
