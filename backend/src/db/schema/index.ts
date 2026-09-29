@@ -8,7 +8,6 @@ import {
   pgTable,
   text,
   timestamp,
-  vector,
 } from "drizzle-orm/pg-core";
 
 /* -------------------------------------------------------------------------- */
@@ -121,10 +120,6 @@ export const decisionEnum = pgEnum("decision", ["APPROVED", "DENIED", "ESCALATED
 
 export const refundRequestStatusEnum = pgEnum("refund_request_status", ["SUBMITTED", "DECIDED"]);
 
-export const policyStatusEnum = pgEnum("policy_status", ["ACTIVE", "INACTIVE"]);
-
-export const policySourceTypeEnum = pgEnum("policy_source_type", ["pdf", "markdown", "text"]);
-
 export const actorTypeEnum = pgEnum("actor_type", ["USER", "SYSTEM"]);
 
 /* -------------------------------------------------------------------------- */
@@ -215,13 +210,6 @@ export const refundRequests = pgTable(
     aiExtraction: jsonb("ai_extraction").$type<Record<string, unknown>>(),
     /** Deterministic pre-check result on the raw message, before the LLM saw it. */
     injectionDetected: boolean("injection_detected").notNull().default(false),
-    /** Which policy version supplied retrieval context for the explanation. */
-    policyId: text("policy_id"),
-    policyVersion: integer("policy_version"),
-    /** Snapshot of the chunks retrieved, so history stays explainable after reindex. */
-    retrievedContext: jsonb("retrieved_context")
-      .$type<Array<{ policyId: string; policyName: string; chunkIndex: number; content: string }>>()
-      .default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -229,55 +217,6 @@ export const refundRequests = pgTable(
     index("refund_requests_customer_id_idx").on(t.customerId),
     index("refund_requests_order_id_idx").on(t.orderId),
     index("refund_requests_created_at_idx").on(t.createdAt),
-  ],
-);
-
-/**
- * Policy metadata + the extracted text of the uploaded document.
- *
- * The binary is never stored. `content` is the application's persisted,
- * normalized representation of the document, which is also what makes
- * reindexing possible without the original file.
- */
-export const policies = pgTable(
-  "policies",
-  {
-    id: text("id").primaryKey(),
-    name: text("name").notNull(),
-    version: integer("version").notNull().default(1),
-    status: policyStatusEnum("status").notNull().default("INACTIVE"),
-    sourceType: policySourceTypeEnum("source_type").notNull(),
-    originalFilename: text("original_filename").notNull(),
-    content: text("content").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [index("policies_status_idx").on(t.status)],
-);
-
-/**
- * Chunked + embedded policy text. CASCADE means deleting a policy cleans up its
- * chunks in the database, not just in application code.
- *
- * No vector index on purpose: a policy corpus is tens to low hundreds of chunks,
- * where a sequential scan beats an approximate index. Revisit if this grows.
- */
-export const policyChunks = pgTable(
-  "policy_chunks",
-  {
-    id: text("id").primaryKey(),
-    policyId: text("policy_id")
-      .notNull()
-      .references(() => policies.id, { onDelete: "cascade" }),
-    chunkIndex: integer("chunk_index").notNull(),
-    content: text("content").notNull(),
-    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
-    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    index("policy_chunks_policy_id_idx").on(t.policyId),
-    index("policy_chunks_policy_chunk_idx").on(t.policyId, t.chunkIndex),
   ],
 );
 
@@ -326,12 +265,4 @@ export const refundRequestsRelations = relations(refundRequests, ({ one }) => ({
     references: [customers.id],
   }),
   order: one(orders, { fields: [refundRequests.orderId], references: [orders.id] }),
-}));
-
-export const policiesRelations = relations(policies, ({ many }) => ({
-  chunks: many(policyChunks),
-}));
-
-export const policyChunksRelations = relations(policyChunks, ({ one }) => ({
-  policy: one(policies, { fields: [policyChunks.policyId], references: [policies.id] }),
 }));

@@ -6,11 +6,10 @@ import {
   type RefundReason,
 } from "../../domain/refund-policy.service.js";
 import { createLogger } from "../../lib/logger.js";
-import { buildRetrievalQuery, retrievePolicyContext } from "../../rag/retrieval.js";
 import { recordAuditEvent } from "../audit/repository.js";
 import { findOrderForCustomer, type OrderRecord } from "../orders/repository.js";
 import { createRefundRequest, hasOpenRequestForOrder } from "./repository.js";
-import type { ExtractedRefundIntent, RefundEvaluation, RetrievedContext } from "./types.js";
+import type { ExtractedRefundIntent, RefundEvaluation } from "./types.js";
 
 const log = createLogger("refund-service");
 
@@ -24,13 +23,11 @@ const log = createLogger("refund-service");
  *   2. LLM extraction, treated as an untrusted proposal.
  *   3. Order lookup scoped to the session's customer, never a client id.
  *   4. Deterministic policy evaluation. This is authoritative.
- *   5. RAG retrieval for explanation context only.
- *   6. LLM phrasing of the already-fixed decision, with a deterministic fallback.
- *   7. Persist the request plus an audit event.
+ *   5. LLM phrasing of the already-fixed decision, with a deterministic fallback.
+ *   6. Persist the request plus an audit event.
  *
- * Steps 5 and 6 happen after step 4, so nothing the model or the vector store
- * returns can change the decision. The model is a parser and a writer; the
- * engine is the judge.
+ * Step 5 happens after step 4, so nothing the model returns can change the
+ * decision. The model is a parser and a writer; the engine is the judge.
  */
 
 export interface EvaluateRefundInput {
@@ -50,22 +47,6 @@ function toSnapshot(order: OrderRecord): PolicyOrderSnapshot {
     refundStatus: order.refundStatus,
     status: order.status,
   };
-}
-
-function toRetrievedContext(
-  chunks: Array<{
-    policyId: string;
-    policyName: string;
-    chunkIndex: number;
-    content: string;
-  }>,
-): RetrievedContext[] {
-  return chunks.map((c) => ({
-    policyId: c.policyId,
-    policyName: c.policyName,
-    chunkIndex: c.chunkIndex,
-    content: c.content,
-  }));
 }
 
 /**
@@ -116,24 +97,15 @@ export async function evaluateRefundRequest(input: EvaluateRefundInput): Promise
   });
   const outcome = evaluateRefundPolicy(facts);
 
-  // (5) RAG context for the explanation. Best-effort; never affects step 4.
-  const retrievalQuery = buildRetrievalQuery({
-    reason: extraction.reason,
-    orderIsFinalSale: order?.isFinalSale ?? false,
-    orderTotalCents: order?.totalAmountCents ?? 0,
-  });
-  const policyContext = await retrievePolicyContext(retrievalQuery);
-
-  // (6) LLM phrasing of the fixed decision, with a deterministic fallback.
+  // (5) LLM phrasing of the fixed decision, with a deterministic fallback.
   const response = await generateCustomerResponse({
     decision: outcome.decision,
     outcome,
-    chunks: policyContext.chunks,
     message,
     orderNumber: order?.orderNumber ?? extraction.orderNumber,
   });
 
-  // (7) Persist the request and write an audit event.
+  // (6) Persist the request and write an audit event.
   let requestId: string | null = null;
   let finalOutcome = outcome;
   if (order) {
@@ -149,9 +121,6 @@ export async function evaluateRefundRequest(input: EvaluateRefundInput): Promise
       status: outcome.requiresHumanReview ? "SUBMITTED" : "DECIDED",
       extraction,
       injectionDetected: earlyScan.detected,
-      policyId: policyContext.policyVersions[0]?.policyId ?? null,
-      policyVersion: policyContext.policyVersions[0]?.version ?? null,
-      retrievedContext: toRetrievedContext(policyContext.chunks),
     });
     requestId = record.id;
 
@@ -190,9 +159,6 @@ export async function evaluateRefundRequest(input: EvaluateRefundInput): Promise
       extractionDegradedReason: extraction.degradedReason,
       injectionDetected: earlyScan.detected,
       injectionCategories: earlyScan.categories,
-      retrievalDegraded: policyContext.degraded,
-      retrievedChunkCount: policyContext.chunks.length,
-      policyVersion: policyContext.policyVersions[0]?.version ?? null,
       responseSource: response.source,
     },
   });
@@ -205,7 +171,6 @@ export async function evaluateRefundRequest(input: EvaluateRefundInput): Promise
   return {
     outcome: finalOutcome,
     extraction,
-    policyContext,
     response,
     requestId,
     orderId: order?.id ?? null,

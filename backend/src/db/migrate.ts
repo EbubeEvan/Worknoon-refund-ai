@@ -2,8 +2,9 @@ import { env } from "../config/env.js";
 
 /**
  * Migrations are plain SQL applied in order by drizzle-orm's migrator.
- * A hand-written first migration creates the pgvector extension, because the
- * `vector` column type in policy_chunks cannot exist without it.
+ * The first migration creates the pgvector extension for a since-removed
+ * policy_chunks table; 0003 drops both, but a fresh database still needs the
+ * pgvector image for 0000 to apply.
  */
 export async function runMigrations(): Promise<void> {
   const { migrate } = await import("drizzle-orm/node-postgres/migrator");

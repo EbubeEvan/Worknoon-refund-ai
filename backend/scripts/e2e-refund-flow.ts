@@ -378,12 +378,6 @@ async function main() {
     );
     check("approved amount equals order total", "$190.00", usd(body.approvedAmountCents));
     check("reply is present", "true", String(Boolean(body.reply?.text)));
-    check(
-      "retrieval returned policy context",
-      "true",
-      String((body.explain?.retrievedContext?.length ?? 0) > 0),
-      `chunks=${body.explain?.retrievedContext?.length}`,
-    );
     // Informational: a fallback here means Gemini's free-tier quota was
     // exhausted, not that the policy engine misbehaved. The decision above was
     // still made deterministically, which is what this suite verifies.

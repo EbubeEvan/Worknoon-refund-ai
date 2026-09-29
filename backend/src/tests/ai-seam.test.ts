@@ -6,8 +6,6 @@ import {
   refundIntentWireSchema,
   wireToIntent,
 } from "../ai/extraction.js";
-import { normalizeText } from "../rag/ingestion.js";
-import { buildRetrievalQuery } from "../rag/retrieval.js";
 
 /**
  * Tests for the AI seam: the pure functions that sit between the model and the
@@ -146,57 +144,5 @@ describe("wireToIntent", () => {
       requestedAmount: 0,
     });
     expect(refundIntentSchema.safeParse(result).success).toBe(true);
-  });
-});
-
-describe("buildRetrievalQuery", () => {
-  it("mentions the reason", () => {
-    expect(
-      buildRetrievalQuery({
-        reason: "damaged",
-        orderIsFinalSale: false,
-        orderTotalCents: 100,
-      }),
-    ).toContain("damaged");
-  });
-
-  it("distinguishes final sale orders", () => {
-    const yes = buildRetrievalQuery({
-      reason: "damaged",
-      orderIsFinalSale: true,
-      orderTotalCents: 100,
-    });
-    const no = buildRetrievalQuery({
-      reason: "damaged",
-      orderIsFinalSale: false,
-      orderTotalCents: 100,
-    });
-    expect(yes).toContain("contains final sale items");
-    expect(no).toContain("no final sale items");
-  });
-
-  it("does not embed the raw customer message, only policy vocabulary", () => {
-    // The query builder takes no message parameter at all, which is the point:
-    // attacker-controlled text never becomes the vector search query.
-    const q = buildRetrievalQuery({
-      reason: "damaged",
-      orderIsFinalSale: false,
-      orderTotalCents: 100,
-    });
-    expect(q).not.toMatch(/ignore|instruction|system/i);
-  });
-});
-
-describe("normalizeText", () => {
-  it("collapses runs of blank lines", () => {
-    expect(normalizeText("a\n\n\n\nb")).toBe("a\n\nb");
-  });
-
-  it("trims leading and trailing whitespace", () => {
-    expect(normalizeText("  \n hello \n  ")).toBe("hello");
-  });
-
-  it("normalises CRLF line endings", () => {
-    expect(normalizeText("a\r\nb")).toBe("a\nb");
   });
 });

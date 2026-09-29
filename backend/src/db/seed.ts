@@ -1,16 +1,10 @@
-import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-
 import { count, eq } from "drizzle-orm";
 
-import { newCustomerId, newOrderId, newPolicyId } from "../lib/ids.js";
+import { newCustomerId, newOrderId } from "../lib/ids.js";
 import { createLogger } from "../lib/logger.js";
 import { auth } from "../modules/auth/auth.js";
-import { insertPolicy } from "../modules/policies/repository.js";
-import { indexPolicy } from "../rag/ingestion.js";
 import { db, pool } from "./client.js";
-import { customers, type OrderItem, orders, policies, users } from "./schema/index.js";
+import { customers, type OrderItem, orders, users } from "./schema/index.js";
 
 const log = createLogger("seed");
 
@@ -36,7 +30,6 @@ function item(
   return { sku, name, quantity, unitAmountCents, finalSale };
 }
 
-const POLICY_NAME = "Worknoon Standard Refund Policy";
 const DEMO_PASSWORD = "password123";
 
 interface SeedCustomer {
@@ -327,46 +320,6 @@ async function ensureAuthUser(input: {
   }
 }
 
-function policyFilePath(): string {
-  for (const candidate of [
-    resolve(process.cwd(), "seed/policies/refund-policy.md"),
-    resolve(process.cwd(), "../backend/seed/policies/refund-policy.md"),
-  ]) {
-    if (existsSync(candidate)) return candidate;
-  }
-  throw new Error("refund-policy.md not found");
-}
-
-async function seedPolicy(): Promise<void> {
-  const [existing] = await db
-    .select({ id: policies.id })
-    .from(policies)
-    .where(eq(policies.name, POLICY_NAME))
-    .limit(1);
-  if (existing) {
-    log.info("policy already seeded; skipping");
-    return;
-  }
-
-  const raw = await readFile(policyFilePath(), "utf8");
-  const policy = await insertPolicy({
-    id: newPolicyId(),
-    name: POLICY_NAME,
-    version: 2,
-    status: "ACTIVE",
-    sourceType: "markdown",
-    originalFilename: "refund-policy.md",
-    content: raw,
-  });
-  if (!policy) throw new Error("policy insert returned no row");
-
-  log.info("indexing policy (chunking + embeddings)...");
-  const result = await indexPolicy(policy.id);
-  log.info(
-    `policy indexed: ${result.chunkCount} chunks, embeddings=${result.embedded ? "ok" : "skipped"}`,
-  );
-}
-
 /**
  * Populate the demo dataset if the database has no customers.
  *
@@ -425,8 +378,6 @@ export async function seedIfEmpty(): Promise<void> {
 
     log.debug(`seeded ${c.email} with ${c.orders.length} order(s)`);
   }
-
-  await seedPolicy();
 
   log.info(
     `seed complete: ${SEED_CUSTOMERS.length} customers, admin=${DEMO_ADMIN.email}, password="${DEMO_PASSWORD}"`,

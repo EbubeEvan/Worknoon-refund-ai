@@ -1,12 +1,11 @@
 import { LayersIcon, ShieldIcon } from "@/components/icons.js";
-import { Alert } from "@/components/ui/alert.js";
 import { Card, CardBody, CardHeader } from "@/components/ui/card.js";
 import type { RefundRequestResult } from "@/lib/api.js";
 import { humanRule, usd } from "@/lib/format.js";
 
 /**
- * Transparency panel. This is the part a reviewer should read: it shows the two
- * AI steps and, crucially, that neither of them can change the decision.
+ * Transparency panel. This is the part a reviewer should read: it shows what the
+ * AI extracted and, crucially, that it cannot change the decision.
  */
 export function ExplainPanel({ result }: { result: RefundRequestResult }) {
   const e = result.explain;
@@ -16,7 +15,7 @@ export function ExplainPanel({ result }: { result: RefundRequestResult }) {
       <CardHeader
         icon={<LayersIcon size="size-[18px]" />}
         title="How this was decided"
-        description="For transparency: the checks below ran after your outcome was already decided."
+        description="For transparency: what we read from your message. Your outcome was decided by our refund policy."
       />
       <CardBody>
         <ol className="space-y-3">
@@ -30,38 +29,6 @@ export function ExplainPanel({ result }: { result: RefundRequestResult }) {
                 <Row label="Note" value={e.extraction.degradedReason} />
               ) : null}
             </dl>
-          </li>
-
-          <li className="rounded-2xl border border-border/70 bg-surface-muted/50 p-4">
-            <StepHeading n={2} title="The policy section we checked" />
-            <div className="mt-3">
-              {e.retrievalDegraded ? (
-                <Alert tone="warning">
-                  We couldn't look up the policy just now, so this reply was written without it.
-                  Your outcome is unaffected.
-                </Alert>
-              ) : e.retrievedContext.length === 0 ? (
-                <p className="text-[13px] text-muted">
-                  We couldn't find a matching section in the refund policy.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {e.retrievedContext.map((c) => (
-                    <li
-                      key={`${c.policyId}-${c.chunkIndex}`}
-                      className="rounded-xl border border-border/70 bg-surface px-3.5 py-2.5"
-                    >
-                      <p className="text-[11px] font-medium text-subtle">
-                        {c.policyName} · chunk {c.chunkIndex}
-                      </p>
-                      <p className="mt-1.5 max-h-24 overflow-y-auto text-[12px] leading-relaxed text-muted">
-                        {c.content}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
           </li>
         </ol>
 

@@ -11,7 +11,6 @@ import {
   summariseRefunds,
 } from "./repository.js";
 import { evaluateRefundRequest } from "./service.js";
-import type { RetrievedContext } from "./types.js";
 
 /**
  * Refund request controller.
@@ -71,7 +70,7 @@ export async function createRefundRequestHandler(req: Request, res: Response): P
       source: result.response.source,
       degradedReason: result.response.degradedReason,
     },
-    // Exposed for transparency and for the demo; both are non-authoritative.
+    // Exposed for transparency and for the demo; non-authoritative.
     explain: {
       extraction: {
         source: result.extraction.source,
@@ -80,13 +79,6 @@ export async function createRefundRequestHandler(req: Request, res: Response): P
         requestedAmountCents: result.extraction.requestedAmountCents,
         degradedReason: result.extraction.degradedReason,
       },
-      retrievedContext: result.policyContext.chunks.map((c): RetrievedContext => ({
-        policyId: c.policyId,
-        policyName: c.policyName,
-        chunkIndex: c.chunkIndex,
-        content: c.content,
-      })),
-      retrievalDegraded: result.policyContext.degraded,
     },
   });
 }

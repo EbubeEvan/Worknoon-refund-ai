@@ -12,7 +12,6 @@ import { adminRouter } from "./modules/admin/routes.js";
 import { auth } from "./modules/auth/auth.js";
 import { customersRouter } from "./modules/customers/routes.js";
 import { ordersRouter } from "./modules/orders/routes.js";
-import { policiesRouter } from "./modules/policies/routes.js";
 import { refundsRouter } from "./modules/refunds/routes.js";
 
 const log = createLogger("server");
@@ -38,7 +37,7 @@ app.use(
   }),
 );
 
-// Refund messages are small JSON bodies. File uploads use multer separately.
+// Refund messages are small JSON bodies; there are no file uploads.
 app.use(express.json({ limit: "256kb" }));
 app.use(express.urlencoded({ extended: false, limit: "256kb" }));
 
@@ -90,7 +89,6 @@ app.use(
 app.use("/api/orders", ordersRouter);
 app.use("/api/customers", customersRouter);
 app.use("/api/refunds", refundsRouter);
-app.use("/api/policies", policiesRouter);
 app.use("/api/admin", adminRouter);
 
 /* -------------------------------------------------------------------------- */

@@ -88,8 +88,6 @@ export const api = {
   post: <T>(path: string, json?: unknown) => request<T>(path, { method: "POST", json }),
   patch: <T>(path: string, json?: unknown) => request<T>(path, { method: "PATCH", json }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
-  /** Multipart upload, for policy documents. */
-  upload: <T>(path: string, form: FormData) => request<T>(path, { method: "POST", body: form }),
 };
 
 /* -------------------------------------------------------------------------- */
@@ -126,13 +124,6 @@ export interface OrderWithCustomer extends Order {
   customerEmail: string;
 }
 
-export interface RetrievedContext {
-  policyId: string;
-  policyName: string;
-  chunkIndex: number;
-  content: string;
-}
-
 export interface RefundRequestResult {
   requestId: string | null;
   decision: Decision;
@@ -149,8 +140,6 @@ export interface RefundRequestResult {
       requestedAmountCents: number | null;
       degradedReason: string | null;
     };
-    retrievedContext: RetrievedContext[];
-    retrievalDegraded: boolean;
   };
 }
 
@@ -166,9 +155,6 @@ export interface RefundRequest {
   decisionReasons: string[];
   status: "SUBMITTED" | "DECIDED";
   injectionDetected: boolean;
-  policyId: string | null;
-  policyVersion: number | null;
-  retrievedContext: RetrievedContext[];
   orderNumber: string;
   orderTotalCents: number;
   items: OrderItem[];
@@ -187,24 +173,6 @@ export interface CustomerWithStats extends Customer {
   orderCount: number;
   totalSpendCents: number;
   refundedCents: number;
-}
-
-export interface Policy {
-  id: string;
-  name: string;
-  version: number;
-  status: "ACTIVE" | "INACTIVE";
-  sourceType: "pdf" | "markdown" | "text";
-  originalFilename: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PolicyChunk {
-  id: string;
-  chunkIndex: number;
-  content: string;
-  metadata: Record<string, unknown>;
 }
 
 export interface AuditEvent {
@@ -275,15 +243,6 @@ export const endpoints = {
       `/admin/audit${suffix ? `?${suffix}` : ""}`,
     );
   },
-
-  policies: () => api.get<{ policies: Policy[] }>("/policies"),
-  policy: (id: string) =>
-    api.get<{ policy: Policy; chunkCount: number; chunks: PolicyChunk[] }>(`/policies/${id}`),
-  uploadPolicy: (form: FormData) =>
-    api.upload<{ policy: Policy; chunkCount: number; embedded: boolean }>("/policies", form),
-  setPolicyStatus: (id: string, status: "ACTIVE" | "INACTIVE") =>
-    api.patch<{ policy: Policy }>(`/policies/${id}`, { status }),
-  deletePolicy: (id: string) => api.delete<{ ok: boolean }>(`/policies/${id}`),
 };
 
 export interface SessionUser {

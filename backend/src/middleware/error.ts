@@ -39,15 +39,6 @@ export function errorHandler(
     return;
   }
 
-  // Multer surfaces upload problems with these codes.
-  const anyErr = err as { code?: string; message?: string };
-  if (anyErr?.code === "LIMIT_FILE_SIZE") {
-    res.status(413).json({
-      error: { code: "PAYLOAD_TOO_LARGE" satisfies ErrorCode, message: "File is too large" },
-    });
-    return;
-  }
-
   // Never leak internals to the client; log the full error server-side.
   log.error("unhandled error", err);
   res.status(500).json({

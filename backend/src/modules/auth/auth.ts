@@ -15,7 +15,7 @@ import { accounts, sessions, users, verifications } from "../../db/schema/index.
  * vocabulary as the rest of the app: CUSTOMER / ADMIN.
  *
  * The adapter is name-driven - it only ever looks up these four models, so it
- * never touches the domain tables or the pgvector column.
+ * never touches the domain tables.
  */
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,

@@ -23,7 +23,7 @@ const DEMO_ACCOUNTS = [
   },
   {
     label: "Administrator",
-    hint: "Dashboard, policies, audit",
+    hint: "Dashboard, audit",
     email: "admin@worknoon.test",
     admin: true,
   },

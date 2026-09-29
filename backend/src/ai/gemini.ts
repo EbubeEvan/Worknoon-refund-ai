@@ -1,11 +1,10 @@
-import { TaskType } from "@google/generative-ai";
-import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
-import { CHAT_LIMITS, CHAT_MODEL, EMBED_DIM, EMBED_MODEL } from "../config/ai.js";
+import { CHAT_LIMITS, CHAT_MODEL } from "../config/ai.js";
 import { env } from "../config/env.js";
 
 /**
- * Shared LangChain + Gemini clients.
+ * Shared LangChain + Gemini chat client.
  *
  * Constructed lazily so that importing this module never opens a network
  * connection - which keeps unit tests of the pure policy engine free of any
@@ -13,7 +12,6 @@ import { env } from "../config/env.js";
  */
 
 let chatModel: ChatGoogleGenerativeAI | null = null;
-let embeddingModel: GoogleGenerativeAIEmbeddings | null = null;
 
 export function getChatModel(): ChatGoogleGenerativeAI {
   if (chatModel) return chatModel;
@@ -30,20 +28,4 @@ export function getChatModel(): ChatGoogleGenerativeAI {
   });
 
   return chatModel;
-}
-
-export function getEmbeddingModel(): GoogleGenerativeAIEmbeddings {
-  if (embeddingModel) return embeddingModel;
-
-  embeddingModel = new GoogleGenerativeAIEmbeddings({
-    model: EMBED_MODEL,
-    apiKey: env.GEMINI_API_KEY,
-    // Must match policy_chunks.embedding vector(1536). Native output is 3072.
-    outputDimensionality: EMBED_DIM,
-    // LangChain applies RETRIEVAL_QUERY for embedQuery and this value for
-    // embedDocuments, which is the correct asymmetric setup for RAG.
-    taskType: TaskType.RETRIEVAL_DOCUMENT,
-  });
-
-  return embeddingModel;
 }

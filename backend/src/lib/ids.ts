@@ -14,6 +14,4 @@ export const newUserId = () => newId("usr");
 export const newCustomerId = () => newId("cus");
 export const newOrderId = () => newId("ord");
 export const newRefundId = () => newId("ref");
-export const newPolicyId = () => newId("pol");
-export const newChunkId = () => newId("chunk");
 export const newAuditId = () => newId("aud");

@@ -59,8 +59,6 @@ const schema = z.object({
 
   GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
   CHAT_MODEL: z.string().min(1).default("gemini-3.5-flash-lite"),
-  EMBED_MODEL: z.string().min(1).default("gemini-embedding-2"),
-  EMBED_DIM: z.coerce.number().int().positive().default(1536),
 
   BETTER_AUTH_SECRET: z.string().min(16, "BETTER_AUTH_SECRET must be at least 16 chars"),
   BETTER_AUTH_URL: z.string().url().default("http://localhost:4000"),
@@ -77,7 +75,7 @@ const schema = z.object({
     .default("false")
     .transform((v) => v === "true"),
 
-  /** Seed demo customers/orders/policy on boot when the database is empty. */
+  /** Seed demo customers/orders on boot when the database is empty. */
   SEED_ON_BOOT: z
     .enum(["true", "false"])
     .default("true")
@@ -100,6 +98,3 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
-
-/** The vector width baked into policy_chunks.embedding. Changing it needs a migration. */
-export const EMBED_DIM = env.EMBED_DIM;

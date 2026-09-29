@@ -9,14 +9,14 @@ import { seedIfEmpty } from "../src/db/seed.js";
  *   POSTGRES_HOST=... npx tsx scripts/reset-demo.ts
  *
  * Truncates the domain tables (customers cascade to orders and refund
- * requests) and leaves the Better Auth users and policies alone, so login
+ * requests) and leaves the Better Auth users alone, so login
  * credentials survive. Useful before a demo or before the e2e run, which needs
  * a clean slate to assert on refund counts.
  */
 async function main() {
   console.log("truncating domain tables...");
   await db.execute(sql`
-    truncate table refund_requests, orders, customers, policy_chunks, policies
+    truncate table refund_requests, orders, customers
     restart identity cascade
   `);
 

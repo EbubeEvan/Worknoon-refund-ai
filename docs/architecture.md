@@ -45,15 +45,12 @@ ticket, and the cost of the alternative is unbounded.
 3. Order lookup scoped to the session customer.
 4. Injection re-scan on the extracted facts.
 5. Deterministic policy evaluation.
-6. pgvector retrieval over the **active** policy only.
-7. Reply generation, falling back to the engine's own summary.
-8. Transactional persistence plus audit event.
+6. Reply generation, falling back to the engine's own summary.
+7. Transactional persistence plus audit event.
 
 Injection is checked twice on purpose. The first pass stops an attack before it
 reaches a model that might be steered by it; the second protects the engine from
-facts that arrived by some other route. Retrieval is deliberately built from
-normalized policy vocabulary rather than the customer's words, so an attacker
-cannot influence which policy text is retrieved.
+facts that arrived by some other route.
 
 ## Money handling
 
@@ -85,30 +82,33 @@ a substitute for a model's own resistance, but it makes the common cases
 predictable and testable, and it gives the engine a rule code
 (`INJECTION_SUSPECTED`) to escalate on.
 
-## RAG scope
+## The policy document is a spec, not an input
 
-Only the active policy is embedded and searched. Uploaded documents are chunked
-and embedded on ingest; the original file is not stored. Retrieval is scoped to
-`policy_id = active`, so a draft or superseded policy can never inform a
-decision.
+`backend/seed/policies/refund-policy.md` is the written refund policy. Nothing
+reads it at runtime: the rules live in `refund-policy.service.ts`, and the reply
+is phrased from the engine's own summary and rule codes. An earlier version
+embedded the document for retrieval and let admins upload replacements, but an
+uploaded document could change the explanation without changing the decision,
+so the two could contradict each other. When the policy changes, change the
+engine and the markdown together.
 
 ## Why Express and a single Postgres
 
-No agent framework, no message broker, no separate vector database. The system is
+No agent framework, no message broker, no vector database. The system is
 two services and one database. The only genuinely non-trivial state is the
 refund request, and it fits comfortably in a transactional table with a row
 lock. Adding a queue or an agent runtime would add failure modes without
 removing any that matter at this scale.
 
-Where durability does matter, it is bought with Postgres: `pgvector` for
-embeddings, `FOR UPDATE` for the approval race, and an append-only audit table
-in the same transaction as the decision it records.
+Where durability does matter, it is bought with Postgres: `FOR UPDATE` for
+the approval race, and an append-only audit table in the same transaction as the
+decision it records.
 
 ## Testing strategy
 
-- **Unit (58 tests, no I/O).** Every policy rule code, injection patterns, the
-  extraction wire-schema mapping, and retrieval query construction.
-- **E2E (49 checks, live HTTP).** Every policy branch, cross-customer isolation,
+- **Unit (52 tests, no I/O).** Every policy rule code, injection patterns, and
+  the extraction wire-schema mapping.
+- **E2E (48 checks, live HTTP).** Every policy branch, cross-customer isolation,
   replay protection, duplicate suppression, admin surfaces, and now manual
   escalation resolution including its double-resolution guard.
 - **Browser verification.** The customer and admin surfaces were driven manually

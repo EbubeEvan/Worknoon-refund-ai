@@ -30,9 +30,6 @@ customer message
   POLICY ENGINE                  -> APPROVED | DENIED | ESCALATED   <-- decides
       |
       v
-  pgvector retrieval             policy grounding for the explanation
-      |
-      v
   Gemini reply                   words only, given the fixed decision
       |
       v
@@ -67,7 +64,7 @@ in for you.
 | `ada@worknoon.test`    | CUSTOMER | damaged item, approved outright   |
 | `grace@worknoon.test`  | CUSTOMER | request above the $500 auto limit |
 | `marcus@worknoon.test` | CUSTOMER | final sale, denied                |
-| `admin@worknoon.test`  | ADMIN    | escalation queue, policies, audit |
+| `admin@worknoon.test`  | ADMIN    | escalation queue, audit           |
 
 The seed creates 15 customers and 17 orders, each shaped to trigger a different
 policy outcome.
@@ -83,9 +80,9 @@ npm run lint:fix      # eslint --fix
 npm run format        # prettier --write
 npm run format:check  # prettier --check
 npm run typecheck     # tsc: backend/src, backend/scripts, frontend
-npm test              # 58 unit tests (policy engine + AI seam)
-npm run e2e           # 49-check live end-to-end suite
-npm run reset:demo    # wipe orders/requests/policies and re-seed
+npm test              # 52 unit tests (policy engine + AI seam)
+npm run e2e           # 48-check live end-to-end suite
+npm run reset:demo    # wipe orders/requests and re-seed
 npm run build         # compile both packages
 npm run verify        # lint + format:check + typecheck + test + build
 ```
@@ -120,9 +117,9 @@ produces `import { createRouter,RouterProvider }`. The two settle after one pass
 and do not then fight each other; `lint-staged` in the `pre-commit` hook already
 runs them in that order.
 
-`backend/seed/` is in `.prettierignore` on purpose: the policy markdown is chunked
-and embedded into the vector store, so reformatting it would silently change what
-the RAG pipeline ingests.
+`backend/seed/` is in `.prettierignore` on purpose: `refund-policy.md` is the
+authoritative written policy and is kept verbatim. Nothing reads it at runtime —
+the rules live in `refund-policy.service.ts` — so the two must change together.
 
 ### Git hooks
 
@@ -147,17 +144,16 @@ status. Bypass deliberately with `git commit --no-verify` or
 ## Layout
 
 ```
-backend/    Express + Drizzle + pgvector
-  src/ai/         Gemini extraction, embeddings, reply generation
-  src/rag/        document extraction, chunking, indexing, retrieval
+backend/    Express + Drizzle + PostgreSQL
+  src/ai/         Gemini extraction and reply generation
   src/domain/     the policy engine and injection detector (no I/O)
-  src/modules/    auth, customers, orders, refunds, policies, admin, audit
-  seed/           the source policy document
-  scripts/        seed, reset, retrieval smoke test, e2e suite
+  src/modules/    auth, customers, orders, refunds, admin, audit
+  seed/           the written refund policy (spec only; not read at runtime)
+  scripts/        seed, reset, e2e suite
 frontend/   React + Vite + TanStack Router/Query
   src/lib/        typed API client, auth context, formatting
   src/routes/     file-based routes (createFileRoute only; tree is generated)
-  src/features/   auth, customer workspace, admin dashboard/policies/audit
+  src/features/   auth, customer workspace, admin dashboard/audit
   src/components/ app shell, icons, and ui/ primitives (one per file)
 ```
 
@@ -176,8 +172,6 @@ Money is stored as integer cents everywhere. No floats touch an amount.
 | `customers`       | one per user                                                      |
 | `orders`          | `refund_status` and `status` gate what the engine will allow      |
 | `refund_requests` | `requested_amount_cents` and `approved_amount_cents` are separate |
-| `policies`        | uploaded or seeded documents, one active at a time                |
-| `policy_chunks`   | embedded text for retrieval                                       |
 | `audit_logs`      | append-only; no update or delete path exists                      |
 
 `approved_amount_cents` is deliberately distinct from what the customer asked
@@ -193,8 +187,7 @@ of the order line regardless of the figure in the message.
 - **The browser guard is UX only.** All authorization is enforced server-side, so
   bypassing the client guard exposes nothing a signed-in user could not fetch.
 - **Prompt injection is screened before the model sees the text**, and the facts
-  are re-screened before the policy engine runs. Retrieval queries are built from
-  normalized policy vocabulary, never from the raw customer message.
+  are re-screened before the policy engine runs.
 - **Approvals are atomic.** The order row is locked `FOR UPDATE` and re-checked
   inside the transaction, so two concurrent approvals cannot both succeed; the
   loser is downgraded to `ALREADY_REFUNDED`. Resolving an escalation twice

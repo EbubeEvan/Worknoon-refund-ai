@@ -6,13 +6,13 @@ import { type OrderItem, orders, refundRequests } from "../../db/schema/index.js
 import type { Decision, PolicyRuleCode, RefundReason } from "../../domain/refund-policy.service.js";
 import { conflict, notFound } from "../../lib/errors.js";
 import { newRefundId } from "../../lib/ids.js";
-import type { ExtractedRefundIntent, RetrievedContext } from "./types.js";
+import type { ExtractedRefundIntent } from "./types.js";
 
 /**
  * Persistence for refund requests.
  *
  * The row stores both halves of the decision: the deterministic outcome, and the
- * AI contribution that fed it (extraction plus retrieved context). Separating
+ * AI contribution that fed it (the extraction). Separating
  * them is what allows a reviewer to answer "why was this approved?" without
  * re-running anything.
  */
@@ -29,15 +29,11 @@ export interface CreateRefundRequestInput {
   status: "SUBMITTED" | "DECIDED";
   extraction: ExtractedRefundIntent;
   injectionDetected: boolean;
-  policyId: string | null;
-  policyVersion: number | null;
-  retrievedContext: RetrievedContext[];
 }
 
 export interface RefundRequestRecord extends Omit<CreateRefundRequestInput, "extraction"> {
   id: string;
   aiExtraction: Record<string, unknown> | null;
-  retrievedContext: RetrievedContext[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,9 +106,6 @@ export async function createRefundRequest(
           raw: input.extraction.raw,
         },
         injectionDetected: input.injectionDetected,
-        policyId: input.policyId,
-        policyVersion: input.policyVersion,
-        retrievedContext: input.retrievedContext,
       })
       .returning();
 
@@ -179,9 +172,6 @@ export async function listRefundRequestsForCustomer(
     decisionReasons: (r.decision_reasons as PolicyRuleCode[]) ?? [],
     status: r.status as "SUBMITTED" | "DECIDED",
     injectionDetected: Boolean(r.injection_detected),
-    policyId: (r.policy_id as string | null) ?? null,
-    policyVersion: r.policy_version === null ? null : Number(r.policy_version),
-    retrievedContext: (r.retrieved_context as RetrievedContext[]) ?? [],
     aiExtraction: (r.ai_extraction as Record<string, unknown> | null) ?? null,
     orderNumber: String(r.order_number),
     orderTotalCents: Number(r.total_amount_cents),
@@ -218,9 +208,6 @@ export async function listEscalatedRequests(
     decisionReasons: (r.decision_reasons as PolicyRuleCode[]) ?? [],
     status: r.status as "SUBMITTED" | "DECIDED",
     injectionDetected: Boolean(r.injection_detected),
-    policyId: (r.policy_id as string | null) ?? null,
-    policyVersion: r.policy_version === null ? null : Number(r.policy_version),
-    retrievedContext: (r.retrieved_context as RetrievedContext[]) ?? [],
     aiExtraction: (r.ai_extraction as Record<string, unknown> | null) ?? null,
     orderNumber: String(r.order_number),
     orderTotalCents: Number(r.total_amount_cents),
@@ -347,9 +334,6 @@ export async function listRecentRequests(limit = 20): Promise<RefundRequestWithO
     decisionReasons: (r.decision_reasons as PolicyRuleCode[]) ?? [],
     status: r.status as "SUBMITTED" | "DECIDED",
     injectionDetected: Boolean(r.injection_detected),
-    policyId: (r.policy_id as string | null) ?? null,
-    policyVersion: r.policy_version === null ? null : Number(r.policy_version),
-    retrievedContext: (r.retrieved_context as RetrievedContext[]) ?? [],
     aiExtraction: (r.ai_extraction as Record<string, unknown> | null) ?? null,
     orderNumber: String(r.order_number),
     orderTotalCents: Number(r.total_amount_cents),

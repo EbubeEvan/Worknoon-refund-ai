@@ -1,7 +1,8 @@
 # ==============================================================================
 # Single-command stack:  docker compose up --build
 #
-#   db    - PostgreSQL + pgvector (transactional store + policy vector index)
+#   db    - PostgreSQL (pgvector image only because migration 0000 predates
+#           removing RAG and still creates the extension; 0003 drops it)
 #   api   - Express 5 + Drizzle + LangChain/Gemini (all decision logic lives here)
 #   web   - nginx serving the built React SPA and proxying /api -> api
 #

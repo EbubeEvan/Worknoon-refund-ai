@@ -14,7 +14,6 @@ import { Route as CustomerRouteImport } from './routes/customer'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
-import { Route as AdminPoliciesRouteImport } from './routes/admin/policies'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -41,18 +40,12 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPoliciesRoute = AdminPoliciesRouteImport.update({
-  id: '/admin/policies',
-  path: '/admin/policies',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
   '/admin/audit': typeof AdminAuditRoute
-  '/admin/policies': typeof AdminPoliciesRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,7 +53,6 @@ export interface FileRoutesByTo {
   '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
   '/admin/audit': typeof AdminAuditRoute
-  '/admin/policies': typeof AdminPoliciesRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -69,29 +61,14 @@ export interface FileRoutesById {
   '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
   '/admin/audit': typeof AdminAuditRoute
-  '/admin/policies': typeof AdminPoliciesRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/customer'
-    | '/login'
-    | '/admin/audit'
-    | '/admin/policies'
-    | '/admin/'
+  fullPaths: '/' | '/customer' | '/login' | '/admin/audit' | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    '/' | '/customer' | '/login' | '/admin/audit' | '/admin/policies' | '/admin'
-  id:
-    | '__root__'
-    | '/'
-    | '/customer'
-    | '/login'
-    | '/admin/audit'
-    | '/admin/policies'
-    | '/admin/'
+  to: '/' | '/customer' | '/login' | '/admin/audit' | '/admin'
+  id: '__root__' | '/' | '/customer' | '/login' | '/admin/audit' | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -99,7 +76,6 @@ export interface RootRouteChildren {
   CustomerRoute: typeof CustomerRoute
   LoginRoute: typeof LoginRoute
   AdminAuditRoute: typeof AdminAuditRoute
-  AdminPoliciesRoute: typeof AdminPoliciesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -140,13 +116,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/policies': {
-      id: '/admin/policies'
-      path: '/admin/policies'
-      fullPath: '/admin/policies'
-      preLoaderRoute: typeof AdminPoliciesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -155,7 +124,6 @@ const rootRouteChildren: RootRouteChildren = {
   CustomerRoute: CustomerRoute,
   LoginRoute: LoginRoute,
   AdminAuditRoute: AdminAuditRoute,
-  AdminPoliciesRoute: AdminPoliciesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport

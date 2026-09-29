@@ -18,7 +18,7 @@ Both must exit 0. A change that only "looks right" is not finished:
   usage. The hook rules here are compiler-backed and have caught real bugs in
   this repo.
 - `npm run build` typechecks `backend/src`, `backend/scripts`, and
-  `frontend/src`. `backend/scripts` includes the seed and the 49-check e2e
+  `frontend/src`. `backend/scripts` includes the seed and the 48-check e2e
   suite, which are easy to break silently.
 
 If you changed formatting or imports, also run:
@@ -45,7 +45,7 @@ include the e2e suite — see below.
 
 ### Tests
 
-`npm test` runs 58 unit tests in under a second. They cover every policy rule
+`npm test` runs 52 unit tests in under a second. They cover every policy rule
 code, so they are the fastest possible signal that the money-moving logic is
 still correct. The husky `pre-push` hook runs them, but run them yourself rather
 than assuming the hook fired.
@@ -68,8 +68,9 @@ first, or scenarios collide on orders an earlier run consumed.
 - **Order lookups are always scoped to the session customer.** Never trust a
   client-supplied customer id.
 - **Never add to `backend/seed/`.** It is deliberately in `.prettierignore`:
-  that markdown is embedded into the vector store, so reformatting it would
-  silently change what the RAG pipeline ingests.
+  `refund-policy.md` is the authoritative written policy and is kept verbatim.
+  Nothing reads it at runtime; the rules live in `refund-policy.service.ts`, so
+  a policy change means changing both together.
 - **Authorization is server-side.** The `useAuthGuard` in
   `frontend/src/features/auth/use-auth-guard.ts` is UX only and must never
   become the only check.
