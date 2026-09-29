@@ -5,7 +5,11 @@ import { badRequest, notFound } from "../../lib/errors.js";
 import { requireCustomer } from "../../middleware/auth.js";
 import { recordAuditEvent } from "../audit/repository.js";
 import { listOrdersForCustomer } from "../orders/repository.js";
-import { listRefundRequestsForCustomer, summariseRefunds } from "./repository.js";
+import {
+  countRefundRequestsForCustomer,
+  listRefundRequestsForCustomer,
+  summariseRefunds,
+} from "./repository.js";
 import { evaluateRefundRequest } from "./service.js";
 import type { RetrievedContext } from "./types.js";
 
@@ -92,8 +96,11 @@ export async function listRefundRequestsHandler(req: Request, res: Response): Pr
   const customerId = requireCustomer(req);
   const { limit, offset } = parseOrThrow(listSchema, req.query);
 
-  const requests = await listRefundRequestsForCustomer(customerId, limit, offset);
-  res.json({ requests, limit, offset });
+  const [requests, total] = await Promise.all([
+    listRefundRequestsForCustomer(customerId, limit, offset),
+    countRefundRequestsForCustomer(customerId),
+  ]);
+  res.json({ requests, total, limit, offset });
 }
 
 /** GET /api/refunds/stats - aggregate decision counters (admin dashboard). */

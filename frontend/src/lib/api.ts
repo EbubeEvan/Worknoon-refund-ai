@@ -240,7 +240,15 @@ export const endpoints = {
     api.get<{ customer: Customer; orders: Order[]; refunds: RefundRequest[] }>("/customers/me"),
   submitRefund: (message: string) =>
     api.post<RefundRequestResult>("/refunds/requests", { message }),
-  refundRequests: () => api.get<{ requests: RefundRequest[] }>("/refunds/requests"),
+  refundRequests: (params?: { limit?: number; offset?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.limit !== undefined) qs.set("limit", String(params.limit));
+    if (params?.offset !== undefined) qs.set("offset", String(params.offset));
+    const suffix = qs.toString();
+    return api.get<{ requests: RefundRequest[]; total: number; limit: number; offset: number }>(
+      `/refunds/requests${suffix ? `?${suffix}` : ""}`,
+    );
+  },
 
   dashboard: () => api.get<DashboardData>("/admin/dashboard"),
   escalations: () => api.get<{ requests: RefundRequest[] }>("/admin/escalations"),
@@ -251,12 +259,13 @@ export const endpoints = {
     ),
   customers: () => api.get<{ customers: CustomerWithStats[] }>("/admin/customers"),
   adminOrders: () => api.get<{ orders: OrderWithCustomer[] }>("/admin/orders"),
-  audit: (params?: { limit?: number; action?: string }) => {
+  audit: (params?: { limit?: number; offset?: number; action?: string }) => {
     const qs = new URLSearchParams();
-    if (params?.limit) qs.set("limit", String(params.limit));
+    if (params?.limit !== undefined) qs.set("limit", String(params.limit));
+    if (params?.offset !== undefined) qs.set("offset", String(params.offset));
     if (params?.action) qs.set("action", params.action);
     const suffix = qs.toString();
-    return api.get<{ events: AuditEvent[]; total: number }>(
+    return api.get<{ events: AuditEvent[]; total: number; limit: number; offset: number }>(
       `/admin/audit${suffix ? `?${suffix}` : ""}`,
     );
   },

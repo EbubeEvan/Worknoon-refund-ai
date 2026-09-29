@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 
 import { AppShell, NavLink } from "@/components/app-shell.js";
+import { FileTextIcon, InboxIcon, LayersIcon, UploadIcon } from "@/components/icons.js";
 import {
   Alert,
   Badge,
@@ -9,13 +10,18 @@ import {
   Card,
   CardBody,
   CardHeader,
+  ConfirmDialog,
   EmptyState,
   Input,
   Label,
+  PageHeader,
+  SkeletonRows,
   Spinner,
   Textarea,
 } from "@/components/ui.js";
-import { ApiError, endpoints, type Policy } from "@/lib/api.js";
+import { endpoints, type Policy } from "@/lib/api.js";
+import { cn } from "@/lib/cn.js";
+import { friendlyError } from "@/lib/errors.js";
 import { shortDate } from "@/lib/format.js";
 import { FullPageSpinner, useAuthGuard } from "@/routes/root.js";
 
@@ -42,6 +48,7 @@ export function AdminPoliciesPage() {
   const [inlineText, setInlineText] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Policy | null>(null);
 
   const detail = useQuery({
     queryKey: ["policy", selected],
@@ -77,7 +84,7 @@ export function AdminPoliciesPage() {
     },
     onError: (err) => {
       setMessage(null);
-      setError(err instanceof ApiError ? err.message : "Upload failed");
+      setError(friendlyError(err, "admin"));
     },
   });
 
@@ -94,6 +101,7 @@ export function AdminPoliciesPage() {
     mutationFn: (id: string) => endpoints.deletePolicy(id),
     onSuccess: () => {
       setSelected(null);
+      setPendingDelete(null);
       void queryClient.invalidateQueries({ queryKey: ["policies"] });
     },
   });
@@ -102,7 +110,6 @@ export function AdminPoliciesPage() {
 
   const nav = (
     <>
-      <NavLink to="/customer">My account</NavLink>
       <NavLink to="/admin">Dashboard</NavLink>
       <NavLink to="/admin/policies" active>
         Policies
@@ -113,24 +120,21 @@ export function AdminPoliciesPage() {
 
   return (
     <AppShell nav={nav}>
-      <div className="space-y-5">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">
-            Refund policy knowledge base
-          </h1>
-          <p className="mt-0.5 text-xs text-muted">
-            Upload a PDF, Markdown, or text policy. It is split into chunks and embedded with
-            Gemini; retrieval searches the active policy only.
-          </p>
-        </div>
+      <div className="space-y-8">
+        <PageHeader
+          icon={<FileTextIcon size="size-5" />}
+          title="Refund policy knowledge base"
+          description="Upload a PDF, Markdown, or text policy. It is split into chunks and embedded with Gemini; retrieval searches the active policy only."
+        />
 
         <Card>
           <CardHeader
+            icon={<UploadIcon size="size-[18px]" />}
             title="Upload a policy"
-            description="Maximum 5 MB. Extracted text is stored; the original file is not."
+            description="Up to 5 MB. We keep the searchable text so the assistant can quote it; the original file is discarded."
           />
-          <CardBody className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
+          <CardBody className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="name">Policy name</Label>
                 <Input
@@ -152,24 +156,40 @@ export function AdminPoliciesPage() {
               </div>
             </div>
 
+            {/* Dashed dropzone wrapped around the real file input, not a label
+                standing in for it: the native control keeps its keyboard and
+                file-picker behaviour while the container does the styling. */}
             <div>
               <Label htmlFor="file">Policy file</Label>
-              <input
-                ref={fileRef}
-                id="file"
-                type="file"
-                accept=".pdf,.md,.markdown,.txt,application/pdf,text/markdown,text/plain"
-                className="w-full text-xs text-muted file:mr-3 file:rounded-lg file:border file:border-border file:bg-surface-muted file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-foreground"
-              />
+              <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border-strong bg-surface-muted/40 px-6 py-6 transition duration-200 hover:border-primary/50 hover:bg-primary-soft/35 sm:flex-row sm:text-left">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface text-primary shadow-xs">
+                  <UploadIcon size="size-[18px]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-foreground">
+                    PDF, Markdown or plain text
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-subtle">
+                    Choose a file from your machine, up to 5 MB
+                  </p>
+                </div>
+                <input
+                  ref={fileRef}
+                  id="file"
+                  type="file"
+                  accept=".pdf,.md,.markdown,.txt,application/pdf,text/markdown,text/plain"
+                  className="w-full shrink-0 text-xs text-muted file:mr-3 file:rounded-xl file:border-0 file:bg-primary file:px-3.5 file:py-2 file:text-xs file:font-medium file:text-white file:shadow-sm file:transition file:hover:brightness-110 sm:max-w-[15rem]"
+                />
+              </div>
             </div>
 
-            <details className="rounded-lg border border-border px-3 py-2">
-              <summary className="cursor-pointer text-xs font-medium text-foreground">
+            <details className="group rounded-2xl border border-border/80 bg-surface-muted/40 px-4 py-3">
+              <summary className="cursor-pointer list-none text-[13px] font-medium text-foreground">
                 Or paste policy text instead
               </summary>
               <Textarea
                 rows={6}
-                className="mt-2"
+                className="mt-3"
                 value={inlineText}
                 onChange={(e) => setInlineText(e.target.value)}
                 placeholder={"# Refund Policy\n\nRefunds are accepted within 30 days..."}
@@ -179,24 +199,37 @@ export function AdminPoliciesPage() {
             {message ? <Alert tone="success">{message}</Alert> : null}
             {error ? <Alert tone="danger">{error}</Alert> : null}
 
-            <Button onClick={() => upload.mutate()} disabled={upload.isPending}>
-              {upload.isPending ? <Spinner className="size-3.5" /> : null}
+            <Button
+              size="lg"
+              onClick={() => upload.mutate()}
+              disabled={upload.isPending}
+              className="w-full sm:w-auto"
+            >
+              {upload.isPending ? <Spinner className="size-4" /> : null}
               {upload.isPending ? "Indexing..." : "Upload and index"}
             </Button>
           </CardBody>
         </Card>
 
-        <div className="grid gap-5 lg:grid-cols-5">
+        <div className="grid items-start gap-6 lg:grid-cols-5">
           <Card className="lg:col-span-2">
-            <CardHeader title="Policies" />
+            <CardHeader
+              icon={<FileTextIcon size="size-[18px]" />}
+              title="Policies"
+              description="Only the active policy is used when answering requests."
+            />
             {policies.isLoading ? (
               <CardBody>
-                <Spinner />
+                <SkeletonRows rows={3} />
               </CardBody>
             ) : (policies.data?.policies.length ?? 0) === 0 ? (
-              <EmptyState title="No policies yet" />
+              <EmptyState
+                icon={<InboxIcon size="size-5" />}
+                title="No policies yet"
+                description="Upload one above to start answering refund requests."
+              />
             ) : (
-              <ul className="divide-y divide-border">
+              <ul className="divide-y divide-border/70">
                 {policies.data?.policies.map((p) => (
                   <li key={p.id}>
                     <PolicyRow
@@ -209,7 +242,7 @@ export function AdminPoliciesPage() {
                           status: p.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
                         })
                       }
-                      onDelete={() => remove.mutate(p.id)}
+                      onDelete={() => setPendingDelete(p)}
                     />
                   </li>
                 ))}
@@ -221,26 +254,34 @@ export function AdminPoliciesPage() {
             {selected ? (
               <Card>
                 <CardHeader
+                  icon={<LayersIcon size="size-[18px]" />}
                   title="Indexed chunks"
-                  description="These are the exact segments retrieval searches."
+                  description="The exact sections the assistant can quote from."
                   action={
-                    detail.data ? <Badge tone="info">{detail.data.chunkCount} chunks</Badge> : null
+                    detail.data ? (
+                      <Badge tone="info" dot>
+                        {detail.data.chunkCount} chunks
+                      </Badge>
+                    ) : null
                   }
                 />
                 {detail.isLoading ? (
                   <CardBody>
-                    <Spinner />
+                    <SkeletonRows rows={4} />
                   </CardBody>
                 ) : (detail.data?.chunks.length ?? 0) === 0 ? (
-                  <EmptyState title="No chunks" />
+                  <EmptyState icon={<LayersIcon size="size-5" />} title="No chunks" />
                 ) : (
-                  <ul className="max-h-[32rem] divide-y divide-border overflow-y-auto">
+                  <ul className="max-h-[32rem] divide-y divide-border/70 overflow-y-auto">
                     {detail.data?.chunks.map((c) => (
-                      <li key={c.id} className="px-5 py-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-subtle">
+                      <li
+                        key={c.id}
+                        className="px-6 py-4 transition-colors hover:bg-surface-muted/40"
+                      >
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-subtle">
                           Chunk {c.chunkIndex}
                         </p>
-                        <pre className="mt-1 whitespace-pre-wrap font-sans text-[11px] leading-relaxed text-muted">
+                        <pre className="mt-2 font-sans text-[12px] leading-relaxed whitespace-pre-wrap text-muted">
                           {c.content}
                         </pre>
                       </li>
@@ -251,14 +292,41 @@ export function AdminPoliciesPage() {
             ) : (
               <Card>
                 <EmptyState
+                  icon={<LayersIcon size="size-5" />}
                   title="Select a policy"
-                  description="Choose a policy on the left to inspect its chunks."
+                  description="Choose a policy on the left to inspect the chunks that were indexed."
                 />
               </Card>
             )}
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title="Delete this policy?"
+        description="This permanently removes the policy and everything indexed from it. The assistant will stop quoting it immediately."
+        preview={
+          pendingDelete ? (
+            <>
+              <span className="font-medium text-foreground">{pendingDelete.name}</span>
+              <br />
+              <span>
+                Version {pendingDelete.version} · {pendingDelete.sourceType}
+              </span>
+            </>
+          ) : null
+        }
+        confirmLabel="Delete policy"
+        tone="danger"
+        pending={remove.isPending}
+        onConfirm={() => {
+          if (pendingDelete) remove.mutate(pendingDelete.id);
+        }}
+      />
     </AppShell>
   );
 }
@@ -278,41 +346,53 @@ function PolicyRow({
 }) {
   return (
     <div
-      className={
-        selected
-          ? "flex cursor-pointer items-start justify-between gap-2 bg-surface-muted px-5 py-3"
-          : "flex cursor-pointer items-start justify-between gap-2 px-5 py-3 hover:bg-surface-muted"
-      }
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className={cn(
+        "flex cursor-pointer items-start justify-between gap-3 px-6 py-4 transition duration-150",
+        selected ? "bg-primary-soft/50" : "hover:bg-surface-muted/60",
+      )}
     >
       <div className="min-w-0">
-        <p className="truncate text-xs font-medium text-foreground">{policy.name}</p>
-        <p className="mt-0.5 text-[11px] text-subtle">
-          v{policy.version} &middot; {policy.sourceType} &middot; {shortDate(policy.createdAt)}
+        <p className="truncate text-[13px] font-medium text-foreground">{policy.name}</p>
+        <p className="mt-1 text-[11px] text-subtle">
+          v{policy.version} · {policy.sourceType} · {shortDate(policy.createdAt)}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <Badge tone={policy.status === "ACTIVE" ? "success" : "neutral"}>{policy.status}</Badge>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          className="rounded px-1.5 py-0.5 text-[10px] font-medium text-primary hover:underline"
-        >
-          {policy.status === "ACTIVE" ? "Deactivate" : "Activate"}
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (confirm(`Delete "${policy.name}" and its chunks?`)) onDelete();
-          }}
-          className="rounded px-1.5 py-0.5 text-[10px] font-medium text-denied hover:underline"
-        >
-          Delete
-        </button>
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <Badge tone={policy.status === "ACTIVE" ? "success" : "neutral"} dot>
+          {policy.status}
+        </Badge>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            className="rounded text-[11px] font-medium text-primary transition hover:text-primary-hover"
+          >
+            {policy.status === "ACTIVE" ? "Deactivate" : "Activate"}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="rounded text-[11px] font-medium text-denied transition hover:brightness-110"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </div>
   );

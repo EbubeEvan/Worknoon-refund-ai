@@ -1,6 +1,7 @@
-import { createRootRoute, Outlet, useRouter } from "@tanstack/react-router";
+import { createRootRoute, Link, Outlet, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 
+import { InboxIcon } from "@/components/icons.js";
 import { Spinner } from "@/components/ui.js";
 import type { SessionUser } from "@/lib/api.js";
 import { useAuth } from "@/lib/auth.js";
@@ -24,15 +25,17 @@ function RootLayout() {
 
 function NotFound() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-2 p-8 text-center">
-      <p className="text-lg font-semibold">Page not found</p>
-      <p className="text-sm text-muted">
-        That page does not exist.{" "}
-        <a href="/" className="text-primary hover:underline">
-          Go back
-        </a>
-        .
-      </p>
+    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 p-8 text-center">
+      <span className="grid size-12 place-items-center rounded-2xl bg-surface-muted text-subtle ring-1 ring-border ring-inset">
+        <InboxIcon size="size-5" />
+      </span>
+      <div>
+        <p className="text-lg font-semibold tracking-tight">Page not found</p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-muted">That page does not exist.</p>
+      </div>
+      <Link to="/" className="text-[13px] font-medium text-primary hover:underline">
+        Go back
+      </Link>
     </main>
   );
 }
@@ -54,18 +57,21 @@ export interface AuthGuardState {
   isReady: boolean;
 }
 
-export function useAuthGuard(opts: { requireAdmin?: boolean } = {}): AuthGuardState {
+export function useAuthGuard(
+  opts: { requireAdmin?: boolean; requireCustomer?: boolean } = {},
+): AuthGuardState {
   const { user, isLoading, isAdmin } = useAuth();
   const router = useRouter();
 
-  const needsRedirect = !isLoading && (!user || (opts.requireAdmin && !isAdmin));
+  const needsRedirect =
+    !isLoading && (!user || (opts.requireAdmin && !isAdmin) || (opts.requireCustomer && isAdmin));
 
   useEffect(() => {
     if (!needsRedirect) return;
     void router.navigate({
-      to: !user ? "/login" : "/customer",
+      to: !user ? "/login" : opts.requireCustomer && isAdmin ? "/admin" : "/customer",
     });
-  }, [needsRedirect, user, router]);
+  }, [needsRedirect, user, isAdmin, opts.requireCustomer, router]);
 
   // While a redirect is pending `needsRedirect` is already true, so this stays
   // false and the page keeps showing a spinner until the new route renders.
@@ -76,7 +82,7 @@ export function useAuthGuard(opts: { requireAdmin?: boolean } = {}): AuthGuardSt
 
 export function FullPageSpinner() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center text-muted">
       <Spinner className="size-6" />
     </div>
   );

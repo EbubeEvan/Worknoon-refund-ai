@@ -143,6 +143,15 @@ export interface RefundRequestWithOrder extends RefundRequestRecord {
   items: OrderItem[];
 }
 
+/** Total request count for a customer, so the history list can paginate. */
+export async function countRefundRequestsForCustomer(customerId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(refundRequests)
+    .where(eq(refundRequests.customerId, customerId));
+  return row?.n ?? 0;
+}
+
 export async function listRefundRequestsForCustomer(
   customerId: string,
   limit = 50,

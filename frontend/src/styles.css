@@ -4,44 +4,115 @@
 /* Design tokens                                                              */
 /*                                                                             */
 /* Tailwind v4 reads @theme as the source of truth for utility classes, so    */
-/* `bg-surface`, `text-muted` etc. below are generated automatically.          */
+/* `bg-surface`, `text-muted`, `shadow-card` etc. below are generated          */
+/* automatically. Never hard-code a colour in a component: add a token here    */
+/* instead, so the palette stays coherent.                                     */
+/*                                                                             */
+/* The palette is deliberately warm - cream surfaces, plum primary, amber      */
+/* accents. Cool greys read as "internal tool"; this is meant to read as a    */
+/* concierge desk.                                                             */
 /* -------------------------------------------------------------------------- */
 
 @theme {
-  --color-background: oklch(0.99 0.002 250);
-  --color-foreground: oklch(0.21 0.02 260);
-
+  --color-background: oklch(0.985 0.006 85);
   --color-surface: oklch(1 0 0);
-  --color-surface-muted: oklch(0.97 0.005 250);
+  --color-surface-muted: oklch(0.973 0.007 85);
+  --color-surface-sunken: oklch(0.958 0.009 85);
 
-  --color-border: oklch(0.91 0.008 255);
-  --color-border-strong: oklch(0.82 0.012 255);
+  --color-border: oklch(0.925 0.009 85);
+  --color-border-strong: oklch(0.865 0.013 85);
 
-  --color-muted: oklch(0.52 0.015 258);
-  --color-subtle: oklch(0.65 0.012 258);
+  --color-foreground: oklch(0.245 0.02 285);
+  --color-muted: oklch(0.505 0.018 275);
+  --color-subtle: oklch(0.635 0.014 275);
 
-  --color-primary: oklch(0.52 0.17 262);
-  --color-primary-hover: oklch(0.46 0.17 262);
-  --color-primary-foreground: oklch(0.99 0 0);
+  --color-primary: oklch(0.505 0.175 290);
+  --color-primary-hover: oklch(0.445 0.175 290);
+  --color-primary-soft: oklch(0.965 0.022 290);
+  --color-primary-foreground: oklch(0.99 0.005 290);
 
-  --color-approved: oklch(0.58 0.15 152);
-  --color-approved-surface: oklch(0.96 0.04 152);
+  --color-accent: oklch(0.735 0.125 70);
+  --color-accent-soft: oklch(0.968 0.032 75);
 
-  --color-denied: oklch(0.55 0.19 22);
-  --color-denied-surface: oklch(0.96 0.04 22);
+  --color-approved: oklch(0.55 0.13 152);
+  --color-approved-surface: oklch(0.965 0.035 152);
 
-  --color-escalated: oklch(0.62 0.15 72);
-  --color-escalated-surface: oklch(0.97 0.05 82);
+  --color-denied: oklch(0.545 0.175 25);
+  --color-denied-surface: oklch(0.965 0.03 25);
 
-  --color-info: oklch(0.58 0.13 235);
-  --color-info-surface: oklch(0.96 0.03 235);
+  --color-escalated: oklch(0.635 0.135 65);
+  --color-escalated-surface: oklch(0.968 0.04 78);
 
-  --radius-card: 0.75rem;
-  --radius-control: 0.5rem;
+  --color-info: oklch(0.565 0.115 235);
+  --color-info-surface: oklch(0.965 0.026 235);
+
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
 
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* Layered shadows: a tight contact shadow plus a wide, low-opacity spread.
+     A single flat offset is what makes a card look cheap. */
+  --shadow-card:
+    0 1px 2px oklch(0.25 0.02 285 / 0.04), 0 8px 24px -12px oklch(0.25 0.02 285 / 0.14);
+  --shadow-raised:
+    0 2px 4px oklch(0.25 0.02 285 / 0.04), 0 18px 40px -20px oklch(0.25 0.02 285 / 0.22);
+  --shadow-pop:
+    0 2px 6px oklch(0.25 0.02 285 / 0.06), 0 28px 56px -24px oklch(0.25 0.02 285 / 0.28);
+
+  --animate-fade-up: fade-up 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-shimmer: shimmer 1.9s ease-in-out infinite;
+  --animate-rise: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-dialog-in: dialog-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.99);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Centering-safe variant of `rise` for Radix dialog content, which is
+     centered with translate utilities. Tailwind v4 implements those with the
+     CSS `translate` property, which composes with `transform` instead of being
+     overridden by it — so these keyframes must not touch translate, or the
+     dialog would be offset twice. */
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: -160% 0;
+    }
+    to {
+      background-position: 260% 0;
+    }
+  }
 }
 
 @layer base {
@@ -49,16 +120,62 @@
     border-color: var(--color-border);
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     background-color: var(--color-background);
+    /* Warm aurora behind the header. `fixed` so it does not travel with the
+       page and expose a seam on long scrolls. */
+    background-image: radial-gradient(
+      68rem 34rem at 50% -14rem,
+      oklch(0.72 0.1 300 / 0.16),
+      transparent 72%
+    );
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01";
+    font-variant-ligatures: contextual;
   }
 
   /* Visible focus for keyboard users on every interactive element. */
   :focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid color-mix(in oklab, var(--color-primary) 72%, white);
     outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-primary) 22%, white);
+    color: var(--color-foreground);
+  }
+
+  /* Warm scrollbar so long policy/audit lists do not read as an OS artefact. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+}
+
+@layer utilities {
+  /* Numbers that sit in tables and totals should never reflow as they tick. */
+  .nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+}
+
+/* Motion is decoration; honour a reader who has asked for less of it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
