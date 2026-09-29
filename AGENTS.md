@@ -45,7 +45,7 @@ include the e2e suite — see below.
 
 ### Tests
 
-`npm test` runs 52 unit tests in under a second. They cover every policy rule
+`npm test` runs 57 unit tests in under a second. They cover every policy rule
 code, so they are the fastest possible signal that the money-moving logic is
 still correct. The husky `pre-push` hook runs them, but run them yourself rather
 than assuming the hook fired.

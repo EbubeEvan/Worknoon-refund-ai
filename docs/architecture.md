@@ -25,7 +25,7 @@ injected), and is a first-match-wins ladder ending in a default-deny rule.
 
 Consequences worth the cost:
 
-- 35 unit tests cover it without a database, including one per rule code.
+- 40 unit tests cover it without a database, including one per rule code.
 - Replaying a historical decision is a pure function call, which is what makes
   the audit trail meaningful.
 - Two code paths that reach the same outcome must agree. Manual escalation
@@ -106,7 +106,7 @@ decision it records.
 
 ## Testing strategy
 
-- **Unit (52 tests, no I/O).** Every policy rule code, injection patterns, and
+- **Unit (57 tests, no I/O).** Every policy rule code, injection patterns, and
   the extraction wire-schema mapping.
 - **E2E (48 checks, live HTTP).** Every policy branch, cross-customer isolation,
   replay protection, duplicate suppression, admin surfaces, and now manual

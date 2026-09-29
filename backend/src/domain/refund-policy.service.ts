@@ -254,11 +254,16 @@ const RULES: Rule[] = [
   {
     code: "AMOUNT_OVER_AUTO_APPROVAL_LIMIT",
     evaluate: (f) => {
-      if (f.requestedAmountCents === null || !f.order) return null;
-      if (f.requestedAmountCents <= POLICY_THRESHOLDS.autoApprovalLimitCents) return null;
+      if (!f.order) return null;
+      // Damaged and incorrect-item refunds pay the full order total (policy §3),
+      // so that is the amount §4's limit applies to, whatever the customer typed.
+      const payoutCents =
+        f.reason === "damaged" || f.reason === "incorrect_item" ? f.order.totalAmountCents : 0;
+      const amountCents = Math.max(payoutCents, f.requestedAmountCents ?? 0);
+      if (amountCents <= POLICY_THRESHOLDS.autoApprovalLimitCents) return null;
       return escalate(
         "AMOUNT_OVER_AUTO_APPROVAL_LIMIT",
-        `The requested amount (${usd(f.requestedAmountCents)}) is above our automatic approval limit of ${usd(POLICY_THRESHOLDS.autoApprovalLimitCents)}, so it needs manual approval.`,
+        `This refund (${usd(amountCents)}) is above our automatic approval limit of ${usd(POLICY_THRESHOLDS.autoApprovalLimitCents)}, so a support agent will review it.`,
       );
     },
   },

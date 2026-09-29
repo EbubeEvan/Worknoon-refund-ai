@@ -199,7 +199,9 @@ async function main() {
       // ORD-1004 is 45 days old, so OUTSIDE_REFUND_WINDOW correctly fires
       // before the change-of-mind rule. First match wins in the ladder.
       email: "grace@worknoon.test",
-      message: "I need a refund for ORD-1003, the desk arrived damaged. It was $780.",
+      // No amount stated on purpose: the limit applies to the payout (the
+      // order total), not to whatever figure the customer happens to type.
+      message: "I need a refund for ORD-1003, the standing desk arrived damaged.",
       expectDecision: "ESCALATED",
       expectRule: "AMOUNT_OVER_AUTO_APPROVAL_LIMIT",
       label: "amount above the $500 auto limit",
